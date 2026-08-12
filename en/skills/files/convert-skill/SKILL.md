@@ -1,0 +1,78 @@
+---
+name: convert-skill
+description: Convert documents between formats with companyFILES MCP tools. Use when asked to convert a file, change format, export Word to PDF, convert Excel to CSV or JSON, transform Markdown to Word or PDF, or convert HTML to Word. Also covers listing all supported conversion pairs.
+---
+
+# Convert Skill
+
+Tools for converting documents between formats.
+
+## Tools in This Skill
+
+| Tool | Purpose |
+|------|---------|
+| `convert_document` | Convert a file between supported formats |
+| `get_supported_conversions` | List all supported format conversion pairs |
+
+## Supported Conversions
+
+| From | To |
+|------|----|
+| Excel | CSV, JSON, Markdown, HTML |
+| CSV | Excel, JSON, Markdown, HTML |
+| JSON | Excel, CSV, Markdown |
+| Word | Text, Markdown, HTML, PDF |
+| Markdown | Word, PDF, HTML, Text, ODT |
+| HTML | Word, PDF, Markdown, Text, ODT |
+| PDF | Text |
+
+> When in doubt, call `get_supported_conversions` to get the full current list.
+
+## Tool Usage
+
+### convert_document
+
+Input can be base64 `file_content`, a `librechat_file_id`, or a `document_id` (stored companyFILES doc).
+
+```json
+{
+  "file_content": "<base64-encoded file>",
+  "from_format": "word",
+  "to_format": "pdf",
+  "filename": "converted_document",
+  "title": "My Document",
+  "author": "Alice",
+  "folder": "converted"
+}
+```
+
+Using a LibreChat file ID:
+```json
+{
+  "librechat_file_id": "<file_id from list_my_files>",
+  "from_format": "excel",
+  "to_format": "csv",
+  "filename": "data_export"
+}
+```
+
+`from_format` (source) values: `excel`, `word`, `pdf`, `csv`, `json`, `markdown`, `html` — note `text` is **not** a valid source.
+`to_format` (target) values: `excel`, `word`, `pdf`, `csv`, `json`, `markdown`, `html`, `text`, `odt`.
+
+Returns `{id, filename, downloadUrl, markdownLink}` — always render `markdownLink` in the reply.
+
+---
+
+### get_supported_conversions
+
+```json
+{}
+```
+
+Returns a list of all supported `{from, to}` format pairs.
+
+## Key Notes
+
+- `title` and `author` are only used when the output is `word` or `pdf`.
+- To get a file ID to convert, use `list_my_files` (from **file-management-skill**) to discover `librechat_file_id` or `document_id` values.
+- For reading document content without conversion, use `read_excel` / `read_word` / `read_pdf` from their respective skills.
