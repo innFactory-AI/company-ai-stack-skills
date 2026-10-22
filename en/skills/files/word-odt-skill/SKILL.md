@@ -13,7 +13,7 @@ Tools for creating Word (.docx) and ODT (.odt) documents, plus reading Word file
 | ----------------------- | ------------------------------------------------------------------------------- |
 | `create_word`           | Create Word (.docx) from Markdown or plain text                                 |
 | `create_word_from_html` | Create Word from HTML with optional CSS                                         |
-| `create_word_from_json` | Create Word from structured JSON elements                                       |
+| `create_word_from_json` | Dump JSON data into Word as a plain key/value listing                           |
 | `create_odt`            | Create ODT from Markdown (LibreOffice/OpenOffice)                               |
 | `create_odt_from_html`  | Create ODT from HTML                                                            |
 | `read_word`             | Read a Word (.docx) file → text, HTML, Markdown (from base64 or LibreChat file) |
@@ -27,7 +27,7 @@ Tools for creating Word (.docx) and ODT (.odt) documents, plus reading Word file
 User wants to create a Word document from...
   Markdown / plain text  → create_word          (most common)
   HTML + CSS             → create_word_from_html
-  Structured JSON        → create_word_from_json
+  Raw JSON data (dump)   → create_word_from_json  (no layout control)
   A template             → see templates-skill   (create_word_from_template)
 
 User wants OpenDocument format (LibreOffice)...
@@ -61,12 +61,11 @@ User wants to EDIT an existing stored Word document...
   "show_page_numbers": true,
   "page_number_position": "footer",
   "page_number_format": "{page} / {pages}",
-  "include_toc": true,
-  "folder": "reports"
+  "include_toc": true
 }
 ```
 
-`format` can be `"markdown"` (default) or `"plain"`. Note: `create_word` has **no `author` field** — only the HTML/ODT/JSON create tools (`create_word_from_html`, `create_odt`, `create_odt_from_html`) accept `author`.
+`format` can be `"markdown"` (default) or `"plain"`. Note: `create_word` has **no `author` field** — only `create_word_from_html`, `create_odt` and `create_odt_from_html` accept `author`.
 
 ### create_word_from_html
 
@@ -76,8 +75,7 @@ User wants to EDIT an existing stored Word document...
   "css": "h1 { color: #336699; } body { font-family: Arial; }",
   "filename": "report",
   "title": "My Report",
-  "show_page_numbers": true,
-  "folder": "reports"
+  "show_page_numbers": true
 }
 ```
 
@@ -87,10 +85,12 @@ Supports inline images via `doc:<documentId>` (stored companyFILES doc) or `lc:<
 
 ```json
 {
-  "json_content": "{\"elements\":[{\"type\":\"heading\",\"text\":\"Title\",\"level\":1},{\"type\":\"paragraph\",\"text\":\"Content\"},{\"type\":\"table\",\"rows\":[[\"A\",\"B\"],[\"1\",\"2\"]]}]}",
-  "filename": "document"
+  "json_content": "{\"customer\":\"Acme Corp\",\"items\":[{\"name\":\"Widget\",\"qty\":2}]}",
+  "filename": "order_data"
 }
 ```
+
+Writes the JSON as a simple listing under the heading "Document Generated from JSON": one paragraph per field (`key: value`, key in bold); nested objects and arrays are indented, array items appear as `[0]`, `[1]`, …. There is no element schema (no headings, tables or styling from JSON) and no title, author or page options — only `json_content` and `filename`. For a designed document, turn the data into Markdown and use `create_word`.
 
 ### create_odt
 
@@ -102,8 +102,7 @@ Supports inline images via `doc:<documentId>` (stored companyFILES doc) or `lc:<
   "author": "Jane",
   "page_size": "A4",
   "header_text": "Private & Confidential",
-  "show_page_numbers": true,
-  "folder": "letters"
+  "show_page_numbers": true
 }
 ```
 
@@ -169,7 +168,7 @@ Replace the entire content of an existing Word document with new Markdown. Ident
 }
 ```
 
-## Common Page Options (all create tools)
+## Common Page Options (all create tools except `create_word_from_json`)
 
 | Parameter               | Values                              | Default            |
 | ----------------------- | ----------------------------------- | ------------------ |
@@ -183,7 +182,7 @@ Replace the entire content of an existing Word document with new Markdown. Ident
 
 For long documents that exceed a single context window, build them section by section:
 
-1. `create_word` — create the document with the first section; note the returned `document_id`
+1. `create_word` — create the document with the first section; note the returned `id` (pass it as `document_id`)
 2. `append_to_word` — call repeatedly for each additional section
 3. Optionally `read_word_content` to inspect the current state before continuing
 4. `replace_word_content` — if a section needs to be fully rewritten
@@ -192,9 +191,9 @@ All three in-place tools (`read_word_content`, `append_to_word`, `replace_word_c
 
 ## Key Notes
 
-- All create tools return `{id, filename, downloadUrl, markdownLink}` — always render `markdownLink` in the reply.
-- In-place edit tools (`append_to_word`, `replace_word_content`) return the same `document_id` and updated `markdownLink`.
-- Inline images can be referenced via `doc:<documentId>` or `lc:<file_id>` in Markdown or HTML — SVG is auto-converted to PNG for Word.
+- All create tools return `{id, filename, downloadUrl, markdownLink}` (plus `librechat_file_id` when the document is also stored as a chat file) — always render `markdownLink` in the reply.
+- In-place edit tools (`append_to_word`, `replace_word_content`) on a companyFILES document return the same `id` and an updated `markdownLink`. On a chat attachment (`librechat_file_id`) that was updated in place, they return only `{librechat_file_id, filename, message}` — there is no download link; tell the user the attached file was updated. If the attachment cannot be updated in place, the modified copy is saved as a **new** document and its new `id`/`markdownLink` is returned — use that id from then on.
+- Inline images can be referenced via `doc:<documentId>` or `lc:<file_id>` in the Markdown or HTML of the create tools (`create_word`, `create_word_from_html`, `create_odt`, `create_odt_from_html`) — SVG is auto-converted to PNG for Word. `append_to_word` and `replace_word_content` do not resolve these references.
 - Unset page/header/footer options fall back to the org/user theme defaults (e.g. `defaultPageSize`, `defaultHeaderText`, `defaultShowPageNumbers`) before the documented hard defaults apply.
 - For template-based Word creation (placeholders, loops, image injection), use the **templates-skill**.
 - ODT files open natively in LibreOffice and Google Docs.

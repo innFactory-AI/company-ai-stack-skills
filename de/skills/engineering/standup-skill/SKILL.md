@@ -14,6 +14,7 @@ Erstelle Standup-Updates aus Aktivitätsdaten der angebundenen Werkzeuge. Der Sk
 | **Git-Provider über MCP** (z. B. GitHub, GitLab, Bitbucket) | Commits seit dem letzten Standup, offene/gemergte PRs |
 | **Projekt-Tracker über MCP** (z. B. Jira, Linear, Asana, Shortcut) | Aufgaben in Arbeit, abgeschlossen und blockiert |
 | **Chat über MCP** (z. B. Slack, Teams) | Threads mit Blockern oder Entscheidungen |
+| **companyM365** (falls aktiviert) | Teams-Nachrichten und Outlook-Kalender aus deinem Microsoft-365-Konto |
 | **companyRAG / Datei-Upload** | Sprint-Ziele, bevorzugtes Standup-Format des Teams |
 
 > **Keine angebundene Quelle?** Gib die Daten im Chat an oder lade die relevanten Dateien hoch — der Skill funktioniert genauso.

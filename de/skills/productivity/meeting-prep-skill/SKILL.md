@@ -17,6 +17,7 @@ Sammle Kontext aus Kalendern, E-Mail, Chat und Notizen, um Agenden zu entwerfen,
 | **Dokumente über MCP** (z. B. Notion, Confluence, Google Docs) | Frühere Meeting-Notizen, geteilte Dokumente, Projektseiten |
 | **CRM über MCP** (z. B. Salesforce, HubSpot) | Account-Historie, Deal-Status, Kontaktdetails (für externe Meetings) |
 | **Issue-Tracker über MCP** (z. B. Jira, Linear, Asana) | Offene Punkte zum Meeting-Thema |
+| **companyM365** (falls aktiviert) | Outlook-Kalender und -Mails, Teams-Nachrichten und OneDrive-/SharePoint-Dokumente aus deinem Microsoft-365-Konto |
 | **companyRAG / Datei-Upload** | Wiederkehrende Meeting-Vorlagen, Hintergrunddokumente |
 
 > **Keine angebundene Quelle?** Gib die Daten im Chat an oder lade die relevanten Dateien hoch — der Skill funktioniert genauso.

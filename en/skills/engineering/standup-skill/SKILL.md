@@ -14,6 +14,7 @@ Generate standup updates from the activity data of connected tools. The skill wo
 | **Git provider via MCP** (e.g. GitHub, GitLab, Bitbucket) | Commits since last standup, open/merged PRs |
 | **Project tracker via MCP** (e.g. Jira, Linear, Asana, Shortcut) | Tasks in progress, completed, and blocked |
 | **Chat via MCP** (e.g. Slack, Teams) | Threads with blockers or decisions |
+| **companyM365** (if enabled) | Teams messages and Outlook calendar from your Microsoft 365 account |
 | **companyRAG / file upload** | Sprint goals, team standup format preferences |
 
 > **No connected source?** Provide the data in chat or upload the relevant files — the skill works the same way.

@@ -1,0 +1,55 @@
+name: Skills
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docs-build:
+    # The docs site (innFactory-AI/docs) renders every skill as a page. Building it against this
+    # checkout catches missing page.md files, catalog mistakes and broken Markdown before merge.
+    name: Build docs with these skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: skills
+      - uses: actions/checkout@v4
+        with:
+          repository: innFactory-AI/docs
+          path: docs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - run: npm ci
+        working-directory: docs
+      - name: Generate skill pages
+        run: node scripts/sync-skills.mjs --from "$GITHUB_WORKSPACE/skills"
+        working-directory: docs
+      - name: Build docs
+        run: npx --no-install astro build
+        working-directory: docs
+
+  notify-docs:
+    # Rebuild and redeploy the docs site so it always shows the skills from main.
+    # Needs the secret DOCS_DISPATCH_TOKEN: a fine-grained token for innFactory-AI/docs
+    # with "Contents: read and write" (required by the repository_dispatch API).
+    name: Trigger docs deploy
+    needs: docs-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send repository_dispatch to innFactory-AI/docs
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/innFactory-AI/docs/dispatches \
+            -f event_type=skills-updated \
+            -f "client_payload[sha]=${GITHUB_SHA}"

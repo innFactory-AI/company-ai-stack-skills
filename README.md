@@ -1,25 +1,37 @@
 # CompanyGPT Agent Skills
 
-Ready-made agent skills for CompanyGPT, available in German and English — 73 skills across 12 categories.
+Ready-made agent skills for CompanyGPT, available in German and English — 75 skills across 12 categories.
 
 Each skill is a self-contained prompt that teaches an agent one job: how to run a QBR, prep a
-deployment, audit SEO, or query a companyRAG collection. They are prompt-only — no scripts, no
-code execution — and are designed around CompanyGPT's MCP servers, companyRAG collections, and
-companyFILES output tools.
+deployment, audit SEO, or query a companyRAG collection. They are prompt-first: every skill works
+without code execution and is designed around CompanyGPT's MCP servers, companyRAG collections, and
+companyFILES output tools. Some skills add an optional code-execution section (always with a
+fallback) and bundle longer recipes as extra files (`references/…`), which the agent only has when
+the skill is installed as a package (zip), not when just `SKILL.md` is pasted.
 
 ## Layout
 
 ```text
-de/skills/<category>/<skill-name>/SKILL.md   # German
-en/skills/<category>/<skill-name>/SKILL.md   # English
+catalog.json                                   # categories, order, docs index texts
+de/skills/<category>/<skill-name>/SKILL.md     # German skill
+en/skills/<category>/<skill-name>/SKILL.md     # English skill
+<locale>/skills/<category>/<skill-name>/references/  # optional bundled files (part of the skill package)
+<locale>/pages/<category>/<skill-name>.md      # docs page wrapper (title, label, intro)
 ```
 
 Every skill carries YAML frontmatter with a `name` (required) and `description`. The `name` slug is
 kept English in both locales because it is a technical identifier; only the body is translated.
 
+This repo is the single source for the skills on [docs.company-gpt.com](https://docs.company-gpt.com)
+(Tutorials → Skills). The docs build generates its skill pages from `main`, and every push to `main`
+redeploys the docs. See [AGENTS.md](AGENTS.md) for the authoring rules and workflow.
+
 ## Usage
 
-In CompanyGPT, upload a `SKILL.md` under **Skills**, or paste its contents into a new skill. The
+In CompanyGPT, upload a `SKILL.md` under **Skills**, or paste its contents into a new skill. Skills
+with bundled files are uploaded as a zip package of the skill folder; the docs offer it as a download.
+Administrators can also connect this repo in companyADMIN **Library Sync** (path `de/skills` or
+`en/skills`, one language per tenant, no token needed) to provide all skills to the organization. The
 agent picks the skill up when a request matches its `description`. Placeholders such as
 `<your-collection>` / `<deine-collection>` need to be filled in with your own values first.
 
@@ -30,6 +42,7 @@ agent picks the skill up when a request matches its `description`. Placeholders 
 | Skill | DE | EN |
 | --- | --- | --- |
 | Tool Search · Tool-Suche | [`SKILL.md`](de/skills/generic/tool-search-skill/SKILL.md) | [`SKILL.md`](en/skills/generic/tool-search-skill/SKILL.md) |
+| File Routing · Datei-Routing | [`SKILL.md`](de/skills/generic/file-routing-skill/SKILL.md) | [`SKILL.md`](en/skills/generic/file-routing-skill/SKILL.md) |
 
 ### companyRAG
 
@@ -38,11 +51,11 @@ agent picks the skill up when a request matches its `description`. Placeholders 
 | AI Search | [`SKILL.md`](de/skills/company-rag/ai-search-skill/SKILL.md) | [`SKILL.md`](en/skills/company-rag/ai-search-skill/SKILL.md) |
 | Dataset | [`SKILL.md`](de/skills/company-rag/dataset-skill/SKILL.md) | [`SKILL.md`](en/skills/company-rag/dataset-skill/SKILL.md) |
 
-### CompanyFILES
+### companyFILES
 
 | Skill | DE | EN |
 | --- | --- | --- |
-| Charts and Diagrams · Charts und Diagramme | [`SKILL.md`](de/skills/files/charts-diagrams-skill/SKILL.md) | [`SKILL.md`](en/skills/files/charts-diagrams-skill/SKILL.md) |
+| Charts & Diagrams · Charts & Diagramme | [`SKILL.md`](de/skills/files/charts-diagram-skill/SKILL.md) | [`SKILL.md`](en/skills/files/charts-diagram-skill/SKILL.md) |
 | Convert · Konvertierung | [`SKILL.md`](de/skills/files/convert-skill/SKILL.md) | [`SKILL.md`](en/skills/files/convert-skill/SKILL.md) |
 | Excel | [`SKILL.md`](de/skills/files/excel-skill/SKILL.md) | [`SKILL.md`](en/skills/files/excel-skill/SKILL.md) |
 | File Management · Dateiverwaltung | [`SKILL.md`](de/skills/files/file-management-skill/SKILL.md) | [`SKILL.md`](en/skills/files/file-management-skill/SKILL.md) |
@@ -51,6 +64,7 @@ agent picks the skill up when a request matches its `description`. Placeholders 
 | Settings & UI · Einstellungen & UI | [`SKILL.md`](de/skills/files/settings-ui-skill/SKILL.md) | [`SKILL.md`](en/skills/files/settings-ui-skill/SKILL.md) |
 | Templates · Vorlagen | [`SKILL.md`](de/skills/files/templates-skill/SKILL.md) | [`SKILL.md`](en/skills/files/templates-skill/SKILL.md) |
 | Word & ODT | [`SKILL.md`](de/skills/files/word-odt-skill/SKILL.md) | [`SKILL.md`](en/skills/files/word-odt-skill/SKILL.md) |
+| CAD, BIM & 3D | [`SKILL.md`](de/skills/files/cad-bim-skill/SKILL.md) | [`SKILL.md`](en/skills/files/cad-bim-skill/SKILL.md) |
 
 ### Customer Success
 

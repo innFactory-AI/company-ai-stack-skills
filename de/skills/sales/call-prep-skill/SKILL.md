@@ -14,6 +14,7 @@ Verbinde CRM-Kontext, Informationen zu den Teilnehmenden und die Deal-Historie z
 | **CRM über MCP** (z. B. Salesforce, HubSpot, Dynamics) | Deal-Stage, Historie, Kontaktrollen, Notizen, vergangene Aktivitäten-Timeline |
 | **Kalender über MCP** (z. B. Google Calendar, Outlook) | Meeting-Zeit, Teilnehmende, Agenda, wiederkehrendes Muster |
 | **E-Mail über MCP** (z. B. Gmail, Outlook) | Aktueller Schriftverkehr, offene Threads, Tonalität des letzten Austauschs |
+| **companyM365** (falls aktiviert) | Outlook-Kalender und -Mails sowie Personensuche aus deinem Microsoft-365-Konto |
 | **companyRAG-Sammlungen** | Discovery-Frameworks, Einwand-Bibliotheken, relevante Proof Points |
 | **Web-Recherche über MCP** (z. B. LinkedIn, Firmen-News) | Hintergrund der Teilnehmenden, aktuelle Signale rund um das Unternehmen |
 

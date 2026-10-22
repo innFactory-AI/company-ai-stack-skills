@@ -264,4 +264,4 @@ Nach Abschluss des Designs zur Validierung der Vollständigkeit verwenden:
 - Stelle Kapazitätsschätzungen niemals als präzise dar. Kennzeichne alle Schätzungen als `[Größenordnungs-Schätzung — mit Lasttests validieren]`.
 - Versieh Ausgaben mit einer Quellenkennzeichnung: `[Aus Nutzeranforderungen]`, `[Design-Methodik]` oder `[KI-Einschätzung — verifizieren]`.
 
-> **Tipp:** Fordere über companyFILES eine Markdown- oder DOCX-Ausgabe an, um ein formatiertes, sofort teilbares Dokument zu erhalten. Diagramme als Mermaid-Block werden von companyFILES gerendert.
+> **Tipp:** Fordere über companyFILES eine Markdown- oder DOCX-Ausgabe an, um ein formatiertes, sofort teilbares Dokument zu erhalten. Mermaid-Blöcke rendert companyFILES als separates interaktives Diagramm mit PNG-Download, nicht innerhalb des Dokuments.

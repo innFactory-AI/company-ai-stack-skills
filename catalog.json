@@ -1,0 +1,199 @@
+{
+  "index": {
+    "de": {
+      "title": "Skills",
+      "description": "Vorgefertigte Agenten-Skills für companyGPT",
+      "intro": "Du kannst die vorgefertigten Skills für Agenten verwenden, um mit den companyGPT-Tools zu arbeiten. Jeden Skill kannst du herunterladen und in companyGPT unter **Skills** hochladen. Die Skills liegen auch im öffentlichen Repository [company-ai-stack-skills](https://github.com/innFactory-AI/company-ai-stack-skills)."
+    },
+    "en": {
+      "title": "Skills",
+      "description": "Ready-made agent skills for companyGPT",
+      "intro": "Use these ready-made agent skills to work with the companyGPT tools. Download any skill and upload it in companyGPT under **Skills**. All skills are also available in the public repository [company-ai-stack-skills](https://github.com/innFactory-AI/company-ai-stack-skills)."
+    }
+  },
+  "categories": [
+    {
+      "id": "generic",
+      "label": {
+        "de": "Allgemein",
+        "en": "General"
+      },
+      "skills": [
+        "tool-search-skill",
+        "file-routing-skill"
+      ]
+    },
+    {
+      "id": "company-rag",
+      "label": {
+        "de": "companyRAG",
+        "en": "companyRAG"
+      },
+      "skills": [
+        "ai-search-skill",
+        "dataset-skill"
+      ]
+    },
+    {
+      "id": "files",
+      "label": {
+        "de": "companyFILES",
+        "en": "companyFILES"
+      },
+      "skills": [
+        "charts-diagram-skill",
+        "convert-skill",
+        "excel-skill",
+        "file-management-skill",
+        "pdf-skill",
+        "powerpoint-skill",
+        "settings-ui-skill",
+        "templates-skill",
+        "word-odt-skill",
+        "cad-bim-skill"
+      ]
+    },
+    {
+      "id": "customer-success",
+      "label": {
+        "de": "Customer Success",
+        "en": "Customer Success"
+      },
+      "skills": [
+        "onboarding-plan-skill",
+        "qbr-builder-skill",
+        "customer-health-skill",
+        "escalation-brief-skill",
+        "renewal-prep-skill",
+        "success-plan-skill"
+      ]
+    },
+    {
+      "id": "engineering",
+      "label": {
+        "de": "Engineering",
+        "en": "Engineering"
+      },
+      "skills": [
+        "deployment-prep-skill",
+        "code-review-skill",
+        "standup-skill",
+        "tech-debt-skill",
+        "debugging-skill",
+        "tech-docs-skill",
+        "architecture-design-skill",
+        "postmortem-skill",
+        "test-planning-skill"
+      ]
+    },
+    {
+      "id": "human-resources",
+      "label": {
+        "de": "Human Resources",
+        "en": "Human Resources"
+      },
+      "skills": [
+        "interview-guide-skill",
+        "performance-review-skill",
+        "employee-onboarding-skill",
+        "learning-plan-skill",
+        "compensation-skill",
+        "job-description-skill"
+      ]
+    },
+    {
+      "id": "it-knowledge-management",
+      "label": {
+        "de": "IT Knowledge Management",
+        "en": "IT Knowledge Management"
+      },
+      "skills": [
+        "change-request-skill",
+        "security-assessment-skill",
+        "vendor-assessment-skill",
+        "it-docs-skill",
+        "incident-response-skill",
+        "knowledge-article-skill"
+      ]
+    },
+    {
+      "id": "marketing",
+      "label": {
+        "de": "Marketing",
+        "en": "Marketing"
+      },
+      "skills": [
+        "content-draft-skill",
+        "brand-voice-skill",
+        "performance-report-skill",
+        "campaign-planning-skill",
+        "email-sequence-skill",
+        "seo-audit-skill"
+      ]
+    },
+    {
+      "id": "operations",
+      "label": {
+        "de": "Operations",
+        "en": "Operations"
+      },
+      "skills": [
+        "change-management-skill",
+        "status-report-skill",
+        "capacity-planning-skill",
+        "process-doc-skill",
+        "process-optimization-skill",
+        "risk-assessment-skill",
+        "runbook-skill",
+        "compliance-tracking-skill"
+      ]
+    },
+    {
+      "id": "product-management",
+      "label": {
+        "de": "Product Management",
+        "en": "Product Management"
+      },
+      "skills": [
+        "competitor-brief-skill",
+        "sprint-planning-skill",
+        "stakeholder-update-skill",
+        "research-synthesis-skill",
+        "metrics-review-skill",
+        "product-brainstorm-skill",
+        "roadmap-update-skill",
+        "product-spec-skill"
+      ]
+    },
+    {
+      "id": "productivity",
+      "label": {
+        "de": "Productivity",
+        "en": "Productivity"
+      },
+      "skills": [
+        "meeting-prep-skill",
+        "weekly-review-skill",
+        "memory-management-skill"
+      ]
+    },
+    {
+      "id": "sales",
+      "label": {
+        "de": "Sales",
+        "en": "Sales"
+      },
+      "skills": [
+        "deal-strategy-skill",
+        "account-research-skill",
+        "forecast-skill",
+        "battlecard-skill",
+        "call-prep-skill",
+        "pipeline-review-skill",
+        "sales-asset-skill",
+        "outreach-skill",
+        "call-summary-skill"
+      ]
+    }
+  ]
+}

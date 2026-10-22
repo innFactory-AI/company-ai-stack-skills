@@ -1,31 +1,33 @@
 ---
 name: templates-skill
-description: 'Create documents from templates using companyFILES MCP tools. Use when asked to fill a template, use a company template, create a document from a predefined layout, fill placeholders, use a letterhead, fill an invoice template, or create from a DOCX/XLSX/POTX/ODT template. Covers Word, Excel, ODT, and PowerPoint template filling, including image placeholders and loop/repeat syntax.'
+description: 'Erstelle Dokumente aus Vorlagen mit companyFILES MCP-Tools. Verwende diesen Skill, wenn eine Vorlage ausgefüllt, eine Firmenvorlage oder ein Briefkopf verwendet, ein Dokument aus einem vordefinierten Layout erstellt, Platzhalter befüllt, eine Rechnungsvorlage ausgefüllt oder aus einer DOCX-/XLSX-/POTX-/ODT-Vorlage erstellt werden soll. Deckt Word-, Excel-, ODT- und PowerPoint-Vorlagen ab, inklusive Bildplatzhaltern und Schleifen-/Wiederholungssyntax, sowie die Übergabe einer Vorlage an den Code-Interpreter für Änderungen, die die Vorlagen-Tools nicht können.'
 ---
 
-# Templates Skill
+# Vorlagen-Skill
 
-Tools for listing and filling document templates (Word, Excel, ODT, PowerPoint).
+Tools zum Auflisten und Ausfüllen von Dokumentvorlagen (Word, Excel, ODT, PowerPoint).
 
-## Tools in This Skill
+## Tools in diesem Skill
 
-| Tool                                    | Purpose                                                                           |
-| --------------------------------------- | --------------------------------------------------------------------------------- |
-| `list_templates`                        | List all available templates (personal + global) with placeholder info            |
-| `create_word_from_template`             | Fill a DOCX template with `{placeholder}` syntax                                  |
-| `create_word_from_template_with_images` | Fill a DOCX template with text and image placeholders                             |
-| `create_excel_from_template`            | Fill an XLSX template by cell address **or** `{{placeholder}}` name (auto-routed) |
-| `fill_excel_template`                   | Fill an XLSX template using `{{placeholder}}` syntax                              |
-| `create_odt_from_template`              | Fill an ODT template with `{{placeholder}}` syntax                                |
-| `create_powerpoint_from_template`       | Fill a POTX/PPTX template with text, images, charts, speaker notes, slide repeat  |
+| Tool                                    | Zweck                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `list_templates`                        | Alle verfügbaren Vorlagen (persönlich + global) mit Platzhalter-Infos auflisten                   |
+| `create_word_from_template`             | DOCX-Vorlage mit `{placeholder}`-Syntax ausfüllen                                                 |
+| `create_word_from_template_with_images` | DOCX-Vorlage mit Text- und Bildplatzhaltern ausfüllen                                             |
+| `create_excel_from_template`            | XLSX-Vorlage per Zelladresse **oder** `{{placeholder}}`-Name ausfüllen (automatisches Routing)    |
+| `fill_excel_template`                   | XLSX-Vorlage mit `{{placeholder}}`-Syntax ausfüllen                                               |
+| `create_odt_from_template`              | ODT-Vorlage mit `{{placeholder}}`-Syntax ausfüllen                                                |
+| `create_powerpoint_from_template`       | POTX/PPTX-Vorlage mit Text, Bildern, Diagrammen, Sprechernotizen und Folienwiederholung ausfüllen |
+| `attach_template_to_chat`               | Kopie einer Vorlage für den Code-Interpreter an den Chat hängen                                   |
 
-## Workflow
+## Ablauf
 
-1. **Discover templates:** Call `list_templates` (optionally filter by `type`: `docx`, `xlsx`, `potx`, `odt`, `pdf`)
-2. **Note placeholder names** from the response
-3. **Fill the template** with the matching `create_*_from_template` tool
+1. **Vorlagen ermitteln:** Rufe `list_templates` auf (optional nach `type` filtern: `docx`, `xlsx`, `potx`, `odt`, `pdf`)
+2. **Platzhalternamen** aus der Antwort notieren
+3. **Vorlage ausfüllen** mit dem passenden `create_*_from_template`-Tool
+4. **Nur wenn die Vorlagen-Tools es nicht können** (Massen- oder freie Änderungen im Layout der Vorlage) und Code-Ausführung verfügbar ist: `attach_template_to_chat`, dann per Code bearbeiten (siehe unten)
 
-## Tool Usage
+## Verwendung der Tools
 
 ### list_templates
 
@@ -35,24 +37,24 @@ Tools for listing and filling document templates (Word, Excel, ODT, PowerPoint).
 }
 ```
 
-Returns per template: `name`, `displayName`, `description`, `category`, `tags`, placeholder lists, `loopSources`, `fields` (for PDF form templates), `size`, `isDefault`, upload dates, and scope (`"user"` personal or `"global"`).
+Liefert pro Vorlage: `name`, `displayName`, `description`, `category`, `tags`, Platzhalterlisten, `loopSources`, `fields` (bei PDF-Formularvorlagen), `size`, `isDefault`, Upload-Daten und den Geltungsbereich (`"user"` persönlich oder `"global"`).
 
-For **POTX/PPTX** templates the response includes a per-slide breakdown:
+Bei **POTX/PPTX**-Vorlagen enthält die Antwort eine Aufschlüsselung pro Folie (`slideInfo`):
 
-- `slideNumber` — 1-based slide index
-- `layoutName` — PowerPoint layout name (e.g. `"Title Slide"`, `"Two Content"`)
-- `layoutType` — value from a `{{slide_type:xxx}}` marker on that slide (e.g. `"section"`, `"default"`, `"text-image"`)
-- `textPlaceholders` — `{{key}}` placeholders on this slide
-- `imagePlaceholders` — `{%name}` placeholders on this slide
-- `chartPlaceholders` — `{{name}}` chart container placeholders on this slide
+- `slideNumber` — Folienindex, beginnend bei 1
+- `layoutName` — Name des PowerPoint-Layouts (z. B. `"Title Slide"`, `"Two Content"`)
+- `layoutType` — Wert aus einem `{{slide_type:xxx}}`-Marker auf dieser Folie (z. B. `"section"`, `"default"`, `"text-image"`)
+- `textPlaceholders` — `{{key}}`-Platzhalter auf dieser Folie
+- `imagePlaceholders` — `{%name}`-Platzhalter auf dieser Folie
+- `chartPlaceholders` — `{{name}}`-Platzhalter für Diagrammcontainer auf dieser Folie
 
-Use this breakdown to know exactly which placeholder goes on which slide before calling `create_powerpoint_from_template`. Filter by `type` to narrow results: `"docx"`, `"xlsx"`, `"potx"`, `"odt"`, `"pdf"`.
+Nutze diese Aufschlüsselung, um vor dem Aufruf von `create_powerpoint_from_template` genau zu wissen, welcher Platzhalter auf welche Folie gehört. Filtere mit `type`, um die Ergebnisse einzugrenzen: `"docx"`, `"xlsx"`, `"potx"`, `"odt"`, `"pdf"`.
 
 ---
 
 ### create_word_from_template
 
-Placeholder syntax: `{placeholder}` (single curly braces). Dotted paths: `{user.name}`.
+Platzhaltersyntax: `{placeholder}` (einfache geschweifte Klammern). Punktpfade: `{user.name}`.
 
 ```json
 {
@@ -63,12 +65,11 @@ Placeholder syntax: `{placeholder}` (single curly braces). Dotted paths: `{user.
     "date": "2025-05-08",
     "total": "€4,200.00"
   },
-  "filename": "invoice_acme",
-  "folder": "invoices"
+  "filename": "invoice_acme"
 }
 ```
 
-**Table loop syntax** (place FOR/END-FOR in their own table rows):
+**Tabellenschleifen-Syntax** (FOR/END-FOR jeweils in eine eigene Tabellenzeile setzen):
 
 ```
 {FOR item IN items}
@@ -76,13 +77,15 @@ Placeholder syntax: `{placeholder}` (single curly braces). Dotted paths: `{user.
 {END-FOR item}
 ```
 
-Pass `items` as an array in `data`. Missing loop sources are silently skipped with a warning.
+Übergib `items` als Array in `data`. Fehlende Schleifenquellen werden stillschweigend mit einer Warnung übersprungen.
+
+**Vorlagenausdrücke sind kein JavaScript.** Innerhalb von `{…}`-Befehlen funktionieren nur Datenpfade (`$item.price`, `rows[0]`), Literale, Operatoren (`+ - * / %`, Vergleiche, `&& || ??`, `cond ? a : b`), die Befehle `FOR`, `IF` und `EXEC` sowie eine kurze Allowlist von Hilfsfunktionen — z. B. `toFixed`, `toUpperCase`, `join`, `toLocaleDateString`, `Math.round`, `parseFloat`, `new Date(…)`. Arrow Functions, `.map`/`.filter`, Schleifen und Template-Literale lassen das Ausfüllen fehlschlagen — berechne solche Werte vorab und übergib sie in `data`.
 
 ---
 
 ### create_word_from_template_with_images
 
-Supports text placeholders `{name}` and image placeholders `{%logo}`.
+Unterstützt Textplatzhalter `{name}` und Bildplatzhalter `{%logo}`.
 
 ```json
 {
@@ -97,12 +100,11 @@ Supports text placeholders `{name}` and image placeholders `{%logo}`.
       "extension": "png"
     }
   },
-  "filename": "letter_acme",
-  "folder": "letters"
+  "filename": "letter_acme"
 }
 ```
 
-Image via stored document (no re-upload needed):
+Bild aus einem gespeicherten Dokument (kein erneuter Upload nötig):
 
 ```json
 {
@@ -114,13 +116,13 @@ Image via stored document (no re-upload needed):
 }
 ```
 
-The org/user logo is **auto-injected** only into a placeholder named exactly `logo` (i.e. `{%logo}`) — and only when configured in settings and no `logo` value is passed. Differently-named image placeholders (e.g. `{%companyLogo}`) are **not** auto-filled.
+Das Organisations-/Benutzerlogo wird **automatisch eingefügt**, aber nur in einen Platzhalter, der exakt `logo` heißt (also `{%logo}`) — und nur, wenn es in den Einstellungen konfiguriert ist und kein `logo`-Wert übergeben wird. Anders benannte Bildplatzhalter (z. B. `{%companyLogo}`) werden **nicht** automatisch befüllt.
 
 ---
 
 ### create_excel_from_template
 
-Accepts **either** cell addresses (e.g. `"A1"`, `"Sheet2!B3"`) **or** `{{placeholder}}` names (pass the bare name without `{{ }}`) in `cell_values` — it auto-routes based on the keys you pass; mixed keys default to placeholder mode. Use `list_templates` to see available XLSX templates.
+Akzeptiert in `cell_values` **entweder** Zelladressen (z. B. `"A1"`, `"Sheet2!B3"`) **oder** `{{placeholder}}`-Namen (den reinen Namen ohne `{{ }}` übergeben) — das Tool routet automatisch anhand der übergebenen Schlüssel; bei gemischten Schlüsseln gilt der Platzhaltermodus. Mit `list_templates` siehst du die verfügbaren XLSX-Vorlagen.
 
 ```json
 {
@@ -130,8 +132,7 @@ Accepts **either** cell addresses (e.g. `"A1"`, `"Sheet2!B3"`) **or** `{{placeho
     "B5": 125000,
     "Sheet2!C3": "Approved"
   },
-  "filename": "budget_2025",
-  "folder": "finance"
+  "filename": "budget_2025"
 }
 ```
 
@@ -139,7 +140,7 @@ Accepts **either** cell addresses (e.g. `"A1"`, `"Sheet2!B3"`) **or** `{{placeho
 
 ### fill_excel_template
 
-Fills cells using `{{placeholder}}` syntax — preserves formatting, styles, formulas, and charts.
+Befüllt Zellen per `{{placeholder}}`-Syntax — Formatierung, Stile, Formeln und Diagramme bleiben erhalten.
 
 ```json
 {
@@ -158,7 +159,7 @@ Fills cells using `{{placeholder}}` syntax — preserves formatting, styles, for
 
 ### create_odt_from_template
 
-Fills `{{placeholder}}` syntax in ODT templates.
+Befüllt `{{placeholder}}`-Syntax in ODT-Vorlagen.
 
 ```json
 {
@@ -177,18 +178,18 @@ Fills `{{placeholder}}` syntax in ODT templates.
 
 ### create_powerpoint_from_template
 
-Placeholder syntax:
+Platzhaltersyntax:
 
-- **Text:** `{{key}}` anywhere in a text box
-- **Image:** `{%name}` in the **alt text** (`descr` attribute) of an image shape
-- **Chart:** `{{name}}` in the **alt text** of a chart container shape
-- **Layout marker:** `{{slide_type:default}}`, `{{slide_type:section}}`, `{{slide_type:text-image}}` — invisible metadata marker; declares the slide's role. Cleared automatically from the output.
+- **Text:** `{{key}}` an beliebiger Stelle in einem Textfeld
+- **Bild:** `{%name}` im **Alternativtext** (`descr`-Attribut) einer Bildform
+- **Diagramm:** `{{name}}` im **Alternativtext** einer Diagrammcontainer-Form
+- **Layout-Marker:** `{{slide_type:default}}`, `{{slide_type:section}}`, `{{slide_type:text-image}}` — unsichtbarer Metadaten-Marker; legt den Layouttyp der Folie für das `repeat`-Routing (Multi-Source) fest. Wird in der Ausgabe automatisch entfernt. Die Layout-nativen Tools (`create_powerpoint_from_layouts`, `add_slides_from_layouts`) ignorieren ihn.
 
-Always run `list_templates` first — for POTX/PPTX it returns a per-slide breakdown including `layoutName`, `layoutType` (from the `{{slide_type:xxx}}` marker), and which text/image/chart placeholders belong to each slide.
+Führe immer zuerst `list_templates` aus — bei POTX/PPTX liefert es eine Aufschlüsselung pro Folie mit `layoutName`, `layoutType` (aus dem `{{slide_type:xxx}}`-Marker) und den Text-/Bild-/Diagrammplatzhaltern, die zu jeder Folie gehören.
 
-> **If the POTX/PPTX template has NO placeholders**, this tool refuses the call and names the layout tools instead — `list_templates` flags such templates with `hasLegacyPlaceholders: false` and a `nextStep` hint. Corporate-design slide masters (Folienmaster) shipped by design teams usually contain no `{{}}` markup at all — they carry named slide layouts instead. Run `describe_pptx_template { "template_name": "..." }`: when `hasLegacyPlaceholders` is `false`, switch to `create_powerpoint_from_layouts` (see **powerpoint-skill**, "corporate master without `{{}}`"). Never ask the user to type `{{}}` markers into a corporate master.
+> **Enthält die POTX/PPTX-Vorlage KEINE `{{}}`-Platzhalter** und übergibt der Aufruf keine `images`, `charts` oder `speaker_notes`, lehnt dieses Tool den Aufruf ab und nennt stattdessen die Layout-Tools — `list_templates` kennzeichnet solche Vorlagen mit `hasLegacyPlaceholders: false` und einem `nextStep`-Hinweis. Corporate-Design-Folienmaster von Designteams enthalten meist überhaupt kein `{{}}`-Markup — sie bringen stattdessen benannte Folienlayouts mit. Führe `describe_pptx_template { "template_name": "..." }` aus: Ist `hasLegacyPlaceholders` `false`, wechsle zu `create_powerpoint_from_layouts` (siehe **powerpoint-skill**, "corporate master without `{{}}`"). Bitte den Nutzer nie, `{{}}`-Marker in einen Corporate-Master einzutippen.
 
-**Basic usage (single-record fill):**
+**Grundlegende Verwendung (Befüllung mit einem Datensatz):**
 
 ```json
 {
@@ -212,14 +213,19 @@ Always run `list_templates` first — for POTX/PPTX it returns a per-slide break
       "datasets": [{ "label": "Revenue", "values": [100, 150, 120, 180] }]
     }
   },
-  "filename": "q4_deck",
-  "folder": "presentations"
+  "filename": "q4_deck"
 }
 ```
 
-`speaker_notes` keys are **1-based** slide numbers.
+Die Schlüssel von `speaker_notes` sind Foliennummern, **beginnend bei 1**.
 
-**Single-source repeat** (duplicate one slide per data record):
+`charts` benennt nur die Datenreihen des Diagramms um (`datasets[].label`). `labels` und `values` werden **noch nicht** übernommen — der Server protokolliert sie als "not yet implemented", und das Diagramm behält die Daten der Vorlage. Versprich dem Nutzer keine aktualisierten Diagrammwerte.
+
+In PowerPoint-Vorlagen wird kein Logo automatisch platziert: Nur `{{company_name}}` wird automatisch aus den Einstellungen befüllt. Um ein Logo anzuzeigen, übergib es explizit in `images` (z. B. `"logo"` für `{%logo}`).
+
+Das Tool akzeptiert nur `template_name` — kein `document_id` / `librechat_file_id`. Ein im Chat angehängtes `{{}}`-Deck muss zuerst als Vorlage hochgeladen oder im Klonmodus bearbeitet werden (siehe **powerpoint-skill** §2a).
+
+**Single-Source-Wiederholung** (eine Folie pro Datensatz duplizieren):
 
 ```json
 {
@@ -234,11 +240,11 @@ Always run `list_templates` first — for POTX/PPTX it returns a per-slide break
 }
 ```
 
-`repeat.slide` is the 1-based slide number to duplicate; the slide is replaced by N copies, one per data record. By default, slides that are **not** repeated are removed from the output — set `repeat.keep_unused_slides: true` to keep them. `create_powerpoint_from_template` also accepts top-level `title` and `author`.
+`repeat.slide` ist die zu duplizierende Foliennummer (beginnend bei 1); die Folie wird durch N Kopien ersetzt, eine pro Datensatz. Standardmäßig werden Folien, die **nicht** wiederholt werden, aus der Ausgabe entfernt — setze `repeat.keep_unused_slides: true`, um sie zu behalten. `create_powerpoint_from_template` akzeptiert außerdem `title` und `author` auf oberster Ebene.
 
-**Multi-source repeat** (route each record to the slide matching its `slide_type`):
+**Multi-Source-Wiederholung** (jeden Datensatz an die Folie mit passendem `slide_type` leiten):
 
-Use this when the template has multiple layout slides marked with `{{slide_type:xxx}}` and each data record should use a different layout.
+Verwende dies, wenn die Vorlage mehrere mit `{{slide_type:xxx}}` markierte Layoutfolien enthält und jeder Datensatz ein anderes Layout nutzen soll.
 
 ```json
 {
@@ -253,49 +259,80 @@ Use this when the template has multiple layout slides marked with `{{slide_type:
 }
 ```
 
-Omit `repeat.slide` when using `slide_type` routing — the matching template slide is found automatically from its `{{slide_type:xxx}}` marker. The `slide_type` values (`default`, `section`, `text-image`) correspond to the same layout names used in `create_powerpoint`.
+Lass `repeat.slide` beim `slide_type`-Routing weg — die passende Vorlagenfolie wird automatisch über ihren `{{slide_type:xxx}}`-Marker gefunden. Die `slide_type`-Werte (`default`, `section`, `text-image`) entsprechen denselben Layoutnamen wie in `create_powerpoint`.
 
-## Post-Template Editing (Iterative Updates)
+---
 
-Every template tool returns a `document_id`. That ID can be passed directly to the iterative editing tools from **word-odt-skill** and **powerpoint-skill** to further modify the filled document without regenerating from scratch.
+### attach_template_to_chat
 
-### After `create_word_from_template` / `create_word_from_template_with_images`
+Hängt eine Kopie einer Vorlage (persönlich oder global) als Datei an den aktuellen Chat, damit der Code-Interpreter sie mit Python öffnen und bearbeiten kann — für Änderungen, die die `create_*_from_template`-Tools nicht können (z. B. einen Begriff im ganzen Dokument inklusive Tabellen und Fußzeilen ersetzen, viele Tabellenzeilen im Stil der Vorlage anfügen, ein Tabellenblatt neu aufbauen, Folien aus den Layouts des Masters anlegen).
 
-| Goal                         | Tool                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------ |
-| Inspect current content      | `read_word_content { "document_id": "<id>" }`                                        |
-| Add more sections at the end | `append_to_word { "document_id": "<id>", "content": "...", "add_page_break": true }` |
-| Fully rewrite the document   | `replace_word_content { "document_id": "<id>", "content": "..." }`                   |
+| Parameter | Typ | Pflicht | Beschreibung |
+| --- | --- | --- | --- |
+| `name` | string (max. 100) | ja | Vorlagenname genau wie von `list_templates` geliefert |
+| `type` | `docx` \| `xlsx` \| `potx` \| `odt` | ja | Vorlagentyp wie von `list_templates` geliefert (kein `pdf`) |
 
-Example — fill a template then append a custom appendix:
+```json
+{ "name": "invoice", "type": "docx" }
+```
+
+- **Voraussetzungen:** Code-Ausführung muss für den Chat oder Agenten aktiviert (und für die Rolle des Nutzers erlaubt) sein, und die Umgebung muss companyFILES-Dokumente als LibreChat-Dateien speichern. Sonst antwortet das Tool mit einem Fehler — bleib dann bei den Vorlagen-Tools.
+- **Nächster Zug:** Die Datei erreicht den Code-Interpreter erst ab der **nächsten** Nachricht des Nutzers (meist unter `/mnt/data/<name>.<type>`), nicht in derselben Antwort. Sag dem Nutzer, dass die Vorlage angehängt ist, und bitte ihn um seine nächste Nachricht (z. B. „weiter“).
+- Eine `potx`-Vorlage wird als `<name>.pptx` angehängt, damit python-pptx sie direkt öffnet.
+- Ein erneuter Aufruf ist günstig: Eine unveränderte Vorlage hängt dieselbe Datei wieder an, eine geänderte ersetzt die alte Kopie. Die Vorlage selbst bleibt unverändert.
+- Meldet das Tool, dass die Übergabe noch läuft, rufe es nach etwa 30 Sekunden mit denselben Angaben erneut auf — es entsteht keine zweite Kopie.
+
+#### Wenn Code-Ausführung verfügbar ist: Vorlage mit Python bearbeiten
+
+1. Prüfe, ob die Datei da ist (`/mnt/data/`) und die Bibliothek lädt (`import docx` / `openpyxl` / `pptx`).
+2. Ändere Text innerhalb der vorhandenen Runs/Zellen, damit das Layout bleibt; überschreibe nie die Eingabe — speichere das Ergebnis unter neuem Namen in `/mnt/data/`, es kommt als Chat-Anhang zurück.
+3. Öffne das Ergebnis erneut und prüfe auf übrig gebliebene Platzhalter, bevor du Erfolg meldest.
+
+Das ausführliche Rezept (Code für Word, Excel, PowerPoint, Stolperfallen wie verlorene Diagramme bei openpyxl) steht in der mitgelieferten Datei `references/code-template-editing.md` — lies sie mit dem eingebauten `read_file`-Tool, Pfad `templates-skill/references/code-template-editing.md` (nicht das gleichnamige companyFILES-Tool). Sie ist nur vorhanden, wenn dieser Skill als Paket (zip) installiert wurde; wurde nur `SKILL.md` eingefügt, nutze die drei Schritte oben.
+
+**Ohne Code-Ausführung** (oder wenn Datei oder Bibliothek fehlen): Fülle die Vorlage mit den `create_*_from_template`-Tools oben aus und verfeinere das Ergebnis mit den iterativen Tools unten (`append_to_word`, `replace_word_content`, `append_slides_to_powerpoint` mit `reference_slide`, `modify_excel`). Für ODT gibt es in der Standard-Sandbox keine Python-Bibliothek: nimm `create_odt_from_template`.
+
+## Bearbeitung nach dem Ausfüllen (iterative Aktualisierungen)
+
+Jedes Vorlagen-Tool liefert die `id` des neuen Dokuments. Übergib sie als `document_id` an die iterativen Bearbeitungstools aus **word-odt-skill** und **powerpoint-skill**, um das ausgefüllte Dokument weiter anzupassen, ohne es neu zu erzeugen.
+
+### Nach `create_word_from_template` / `create_word_from_template_with_images`
+
+| Ziel                               | Tool                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| Aktuellen Inhalt prüfen            | `read_word_content { "document_id": "<id>" }`                                        |
+| Weitere Abschnitte am Ende anfügen | `append_to_word { "document_id": "<id>", "content": "...", "add_page_break": true }` |
+| Dokument komplett neu schreiben    | `replace_word_content { "document_id": "<id>", "content": "..." }`                   |
+
+Beispiel — Vorlage ausfüllen und anschließend einen eigenen Anhang anfügen:
 
 ```json
 // Step 1: fill the template
 { "template_name": "report", "data": { "title": "Annual Report" } }
-// → returns document_id "abc123"
+// → returns id "abc123" (use it as document_id)
 
 // Step 2: append extra content
 { "document_id": "abc123", "content": "## Appendix A\n\nAdditional data...", "add_page_break": true }
 ```
 
-### After `create_powerpoint_from_template`
+### Nach `create_powerpoint_from_template`
 
-| Goal                                  | Tool                                                                                                                |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Inspect existing slides               | `read_powerpoint_slides { "document_id": "<id>" }`                                                                  |
-| Add new slides at the end             | `append_slides_to_powerpoint { "document_id": "<id>", "slides": [...] }`                                            |
-| Replace a specific slide              | `update_powerpoint_slide { "document_id": "<id>", "slide_number": 3, "slides": [...] }`                             |
-| **Add a slide matching the template** | `append_slides_to_powerpoint { "document_id": "<id>", "reference_slide": 2, "placeholders": {...} }`                |
-| **Replace a slide, keep the look**    | `update_powerpoint_slide { "document_id": "<id>", "slide_number": 3, "reference_slide": 2, "placeholders": {...} }` |
+| Ziel                                          | Tool                                                                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Vorhandene Folien prüfen                      | `read_powerpoint_slides { "document_id": "<id>" }`                                                                  |
+| Neue Folien am Ende anfügen                   | `append_slides_to_powerpoint { "document_id": "<id>", "slides": [...] }`                                            |
+| Eine bestimmte Folie ersetzen                 | `update_powerpoint_slide { "document_id": "<id>", "slide_number": 3, "slides": [...] }`                             |
+| **Folie im Stil der Vorlage anfügen**         | `append_slides_to_powerpoint { "document_id": "<id>", "reference_slide": 2, "placeholders": {...} }`                |
+| **Folie ersetzen, Erscheinungsbild behalten** | `update_powerpoint_slide { "document_id": "<id>", "slide_number": 3, "reference_slide": 2, "placeholders": {...} }` |
 
-> **Keep the template look:** appending/updating with `slides`/`markdown` renders the generic theme, which will **not** match a template deck. Use `reference_slide` + `placeholders` (clone-and-refill) instead — it copies an existing slide's design and refills its `{{placeholders}}`. See **powerpoint-skill** for full details. (Clone mode refills text placeholders only; for image placeholders re-run `create_powerpoint_from_template`.)
+> **Erscheinungsbild der Vorlage behalten:** Anfügen/Aktualisieren mit `slides`/`markdown` rendert das generische Theme, das **nicht** zu einem Vorlagen-Deck passt. Verwende stattdessen `reference_slide` + `placeholders` (Klonen und Neubefüllen) — damit wird das Design einer vorhandenen Folie kopiert und ihre `{{placeholders}}` neu befüllt. Details siehe **powerpoint-skill**. (Der Klonmodus befüllt nur Textplatzhalter neu; für Bildplatzhalter führe `create_powerpoint_from_template` erneut aus.)
 
-Example — fill a template then append a custom closing slide:
+Beispiel — Vorlage ausfüllen und anschließend eine eigene Abschlussfolie anfügen:
 
 ```json
 // Step 1: fill the template
 { "template_name": "corporate_deck", "placeholders": { "title": "Q4 Results" } }
-// → returns document_id "def456"
+// → returns id "def456" (use it as document_id)
 
 // Step 2a: add a generic (non-template-styled) closing slide
 { "document_id": "def456", "slides": [{ "type": "section", "title": "Thank You", "subtitle": "Questions?" }] }
@@ -304,13 +341,14 @@ Example — fill a template then append a custom closing slide:
 { "document_id": "def456", "reference_slide": 2, "placeholders": { "title": "Next Steps", "owner": "PMO" } }
 ```
 
-## Key Notes
+## Wichtige Hinweise
 
-- All create tools return `{id, filename, downloadUrl, markdownLink}` — always render `markdownLink` in the reply.
-- When `folder` is omitted, the filled document is filed under a folder named after `template_name`.
-- `create_word_from_template_with_images` falls back to a global `default.docx` if the named template is missing, whereas `create_word_from_template` does not — verify the template exists with `list_templates` first.
-- Template names are **case-sensitive** — always verify with `list_templates` first.
-- User templates take priority over global templates with the same name.
-- `replace_missing: false` (default) leaves unfilled `{{placeholder}}` tokens intact; `true` replaces them with empty string.
-- Warnings about missing placeholders are included in the response when applicable.
-- After filling a template, use the iterative tools (`append_to_word`, `append_slides_to_powerpoint`, etc.) to add or update content — the `document_id` stays the same throughout.
+- Alle Erstellungstools liefern `{id, filename, downloadUrl, markdownLink}` — gib `markdownLink` immer in der Antwort aus.
+- Wird `filename` weggelassen, erhält das ausgefüllte Dokument den Namen von `template_name` (`create_word_from_template_with_images`: `document`).
+- `create_word_from_template_with_images` greift auf eine globale `default.docx` zurück, wenn die angegebene Vorlage fehlt, `create_word_from_template` dagegen nicht — prüfe mit `list_templates` vorab, ob die Vorlage existiert.
+- Vorlagennamen unterscheiden **Groß- und Kleinschreibung** — prüfe sie immer zuerst mit `list_templates`.
+- Benutzervorlagen haben Vorrang vor globalen Vorlagen mit demselben Namen.
+- `replace_missing: false` (Standard) lässt nicht befüllte `{{placeholder}}`-Tokens unverändert; `true` ersetzt sie durch einen leeren String.
+- Warnungen zu fehlenden Platzhaltern sind gegebenenfalls in der Antwort enthalten.
+- Nutze nach dem Ausfüllen die iterativen Tools (`append_to_word`, `append_slides_to_powerpoint` usw.), um Inhalte hinzuzufügen oder zu aktualisieren — die `document_id` bleibt dabei durchgehend gleich.
+- `attach_template_to_chat` ist der Ausnahmeweg für Änderungen, die die Vorlagen-Tools nicht können; er braucht Code-Ausführung und wirkt ab der nächsten Nachricht des Nutzers.

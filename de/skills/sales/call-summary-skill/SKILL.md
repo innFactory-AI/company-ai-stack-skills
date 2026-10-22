@@ -13,6 +13,8 @@ Wandle Gesprächsnotizen oder Transkripte in verwertbare Erkenntnisse um und ent
 | --- | --- |
 | **CRM über MCP** (z. B. HubSpot, Salesforce) | Account-Kontext, Opportunity-Stage, bekannte Stakeholder, frühere Gesprächsnotizen |
 | **Gesprächsaufzeichnung / Transkription über MCP** (z. B. Gong) | Roh-Transkripte, Teilnehmerlisten, Zeitstempel wichtiger Momente |
+| **companyTRANSCRIBE** (falls aktiviert) | Transkribiert eine im Chat angehängte Gesprächsaufzeichnung (Audio oder Video) mit Sprecherzuordnung oder ruft deine vorhandenen Transkripte ab |
+| **companyM365** (falls aktiviert) | Transkripte von Teams-Meetings |
 | **companyRAG-Sammlungen** | Discovery-Zusammenfassungen, Wettbewerbsprofile, Produktinformationen für kontextgerechte Follow-ups |
 | **Datei-Upload (Transkripte)** | Transkript- oder Notizdateien, die du direkt in den Chat lädst |
 

@@ -14,6 +14,7 @@ Sammle offene Arbeit, bewerte den Fortschritt, mache Blocker sichtbar und erstel
 | **Aufgaben-Manager über MCP** (z. B. Jira, Linear, Asana, Todoist, Monday.com, Notion) | Offene Aufgaben, Fälligkeiten, Status, Verantwortliche |
 | **Kalender über MCP** (z. B. Google Calendar, Outlook Calendar) | Anstehende Meetings, Zeitblöcke, Fristen |
 | **E-Mail & Chat über MCP** (z. B. Gmail, Outlook, Slack, Microsoft Teams) | Action Items aus Korrespondenz, Zusagen aus Gesprächen, Erwähnungen |
+| **companyM365** (falls aktiviert) | Outlook-Kalender und -Mails, Teams-Nachrichten, Aufgaben aus Microsoft To Do und Planner aus deinem Microsoft-365-Konto |
 | **companyRAG / Datei-Upload** | Review-Vorlagen, Projekt-Briefs, Meeting-Notizen mit Action Items |
 
 > **Keine angebundene Quelle?** Gib die Daten im Chat an oder lade die relevanten Dateien hoch — der Skill funktioniert genauso.
