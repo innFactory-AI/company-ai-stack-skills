@@ -1,6 +1,6 @@
 ---
 name: templates-skill
-description: 'Create documents from templates using companyFILES MCP tools. Use when asked to fill a template, use a company template, create a document from a predefined layout, fill placeholders, use a letterhead, fill an invoice template, or create from a DOCX/XLSX/POTX/ODT template. Covers Word, Excel, ODT, and PowerPoint template filling, including image placeholders and loop/repeat syntax.'
+description: 'Create documents from templates using companyFILES MCP tools. Use when asked to fill a template, use a company template, create a document from a predefined layout, fill placeholders, use a letterhead, fill an invoice template, or create from a DOCX/XLSX/POTX/ODT template. Covers Word, Excel, ODT, and PowerPoint template filling, including image placeholders and loop/repeat syntax, and handing a template to the code interpreter for edits the template tools cannot make.'
 ---
 
 # Templates Skill
@@ -18,12 +18,14 @@ Tools for listing and filling document templates (Word, Excel, ODT, PowerPoint).
 | `fill_excel_template`                   | Fill an XLSX template using `{{placeholder}}` syntax                              |
 | `create_odt_from_template`              | Fill an ODT template with `{{placeholder}}` syntax                                |
 | `create_powerpoint_from_template`       | Fill a POTX/PPTX template with text, images, charts, speaker notes, slide repeat  |
+| `attach_template_to_chat`               | Attach a copy of a template to the chat for the code interpreter                  |
 
 ## Workflow
 
 1. **Discover templates:** Call `list_templates` (optionally filter by `type`: `docx`, `xlsx`, `potx`, `odt`, `pdf`)
 2. **Note placeholder names** from the response
 3. **Fill the template** with the matching `create_*_from_template` tool
+4. **Only if the template tools cannot do it** (bulk or free-form changes in the template's layout) and code execution is available: `attach_template_to_chat`, then edit with code (see below)
 
 ## Tool Usage
 
@@ -259,6 +261,36 @@ Use this when the template has multiple layout slides marked with `{{slide_type:
 
 Omit `repeat.slide` when using `slide_type` routing — the matching template slide is found automatically from its `{{slide_type:xxx}}` marker. The `slide_type` values (`default`, `section`, `text-image`) correspond to the same layout names used in `create_powerpoint`.
 
+---
+
+### attach_template_to_chat
+
+Attaches a copy of a template (personal or global) to the current chat as a file, so the code interpreter can open and edit it with Python — for changes the `create_*_from_template` tools cannot make (e.g. replace a term throughout the document including tables and footers, add many table rows in the template's style, rebuild a sheet, add slides from the master's layouts).
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string (max. 100) | yes | Template name exactly as listed by `list_templates` |
+| `type` | `docx` \| `xlsx` \| `potx` \| `odt` | yes | Template type as listed by `list_templates` (no `pdf`) |
+
+```json
+{ "name": "invoice", "type": "docx" }
+```
+
+- **Prerequisites:** code execution must be enabled for the chat or agent (and allowed for the user's role), and the environment must store companyFILES documents as LibreChat files. Otherwise the tool answers with an error — then stay with the template tools.
+- **Next turn:** the file reaches the code interpreter only from the user's **next** message on (usually at `/mnt/data/<name>.<type>`), not in the same reply. Tell the user that the template is attached and ask them to send their next message (e.g. "go ahead").
+- A `potx` template is attached as `<name>.pptx`, so python-pptx opens it directly.
+- Calling it again is cheap: an unchanged template re-attaches the same file, a changed one replaces the old copy. The template itself stays unchanged.
+- If it answers that the hand-off is still running, call it again with the same arguments after about 30 seconds — no second copy is created.
+
+#### If code execution is available: edit the template with Python
+
+1. Check that the file is there (`/mnt/data/`) and that the library loads (`import docx` / `openpyxl` / `pptx`).
+2. Change text inside the existing runs/cells so the layout stays; never overwrite the input — save the result under a new name in `/mnt/data/`, it comes back as a chat attachment.
+3. Re-open the result and check for leftover placeholders before reporting success.
+
+The detailed recipe (Word, Excel, PowerPoint code, pitfalls such as openpyxl dropping charts) is in the bundled file `references/code-template-editing.md` — read it with the built-in `read_file` tool, path `templates-skill/references/code-template-editing.md` (not the companyFILES tool of the same name). It only exists when this skill was installed as a package (zip); if only `SKILL.md` was pasted, use the three steps above.
+
+**Fallback without code execution** (or if the file or library is missing): fill the template with the `create_*_from_template` tools above, then refine the result with the iterative tools below (`append_to_word`, `replace_word_content`, `append_slides_to_powerpoint` with `reference_slide`, `modify_excel`). ODT has no Python library in the standard sandbox: use `create_odt_from_template`.
 
 ## Post-Template Editing (Iterative Updates)
 
@@ -319,3 +351,4 @@ Example — fill a template then append a custom closing slide:
 - `replace_missing: false` (default) leaves unfilled `{{placeholder}}` tokens intact; `true` replaces them with empty string.
 - Warnings about missing placeholders are included in the response when applicable.
 - After filling a template, use the iterative tools (`append_to_word`, `append_slides_to_powerpoint`, etc.) to add or update content — the `document_id` stays the same throughout.
+- `attach_template_to_chat` is the exception path for changes the template tools cannot make; it needs code execution and works from the user's next message on.

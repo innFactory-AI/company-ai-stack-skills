@@ -76,6 +76,14 @@ Das Tool liefert **alle** passenden Abschnitte, ohne Obergrenze. Filtere deshalb
 | `keyword` | Exakte Begriffe, Produktnamen, Fehlercodes, IDs, Normnummern |
 | `hybrid` | Konzeptuelle Frage mit exakten Begriffen. Auch ein guter zweiter Versuch. |
 
+## Im Chat angehängte Dateien
+
+companyRAG kann keine Dateien indexieren, die der Nutzer im Chat anhängt; `search_content` findet nur Dokumente, die schon in der Collection sind. Suche hier nicht nach einer angehängten Datei, sondern:
+
+- Wenn Code-Ausführung verfügbar ist, werte die Datei in der Sandbox aus (`/mnt/data/<dateiname>`).
+- Sonst lies sie mit den companyFILES-Lesetools (`read_pdf`, `read_word`, `read_excel`, `read_file`, falls verfügbar) und ihrer `file_id` aus dem Block `Attached files in this message:`.
+- Sollen die Inhalte dauerhaft oder für andere durchsuchbar sein, müssen sie über die companyRAG-Oberfläche oder von einem Admin in eine companyRAG-Collection aufgenommen werden. Sag das, statt zu versprechen, die Datei „hinzuzufügen“.
+
 ## Regeln
 
 1. **Erst suchen, dann antworten.** Führe vor jeder Antwort mindestens einen Tool-Aufruf aus. Antworte nie aus Allgemeinwissen.

@@ -92,6 +92,14 @@ FROM dataset_umsatz_2024_a3f1
 - Live-Tabellen (`live_*`) werden über eine Schnittstelle befüllt, nicht durch Datei-Uploads. Eine leere Live-Tabelle ist kein Ladefehler. Die Tools weisen dann darauf hin.
 - Meldet ein Tool, dass die Live-Datenquelle nicht verfügbar ist, versuchst du es nicht erneut. Sag dem Benutzer, dass ein Administrator informiert werden muss. Die `dataset_*`-Tabellen derselben Collection bleiben abfragbar.
 
+## Im Chat angehängte Dateien
+
+companyRAG kann keine Dateien laden oder indexieren, die der Nutzer im Chat anhängt; die Dataset-Tools sehen nur Tabellen, die schon in einer Collection existieren, und `execute_sql` kann keine Dateien lesen. Für eine Ad-hoc-Auswertung einer angehängten CSV/XLSX:
+
+- Wenn Code-Ausführung verfügbar ist, werte sie in der Sandbox aus (pandas auf `/mnt/data/<dateiname>`).
+- Sonst lies sie mit companyFILES `read_excel` (CSV: `read_file`, falls verfügbar) und ihrer `file_id` aus dem Block `Attached files in this message:`.
+- Für Daten, die abfragbar bleiben sollen (für spätere Fragen oder für andere), muss die Datei über die companyRAG-Oberfläche oder von einem Admin in eine companyRAG-Dataset-Collection aufgenommen werden; `reload_dataset` lädt nur eine bereits vorhandene Tabelle neu.
+
 ## Regeln
 
 1. **Erst Schema, dann SQL.** Nie raten. Rufe vorher immer `get_schema` oder `describe_table` auf.

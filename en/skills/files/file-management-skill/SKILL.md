@@ -23,6 +23,10 @@ Tools for uploading, listing, searching, downloading, archiving, reading, and cr
 | `convert_to_markdown`          | Save a whole file (e.g. an e-mail with attachments) as one `.md` document — **if available** |
 | `view_image`                   | Look at a stored image or an image attached in the chat                                      |
 
+## Attached Files
+
+When the user attached files, the message context lists them in a block `Attached files in this message:` with one line per file: `- file_id: …, filename: …, type: …, size: … bytes` (plus `stored only` when the content is not in your context). Pass that `file_id` as `librechat_file_id` (or as `document_id` where a tool accepts a LibreChat `file_id`). Use `list_my_files` only when there is no such block, e.g. for a file from an earlier chat. Never guess an ID. Which tool or app fits which file task (companyFILES, code execution, companyRAG, transcription, translation): see the **file-routing-skill**.
+
 ## Decision Guide
 
 ```
@@ -111,8 +115,8 @@ All parameters are optional. `search` is a case-insensitive substring match on f
 
 Returns files from both LibreChat (chat uploads) and PVC (companyFILES storage). Each entry has either `file_id` (LibreChat) or `document_id` (PVC) or both. Use these IDs in read tools (`read_excel`, `read_word`, `read_pdf`, `read_file`), `view_image` and `convert_document`.
 
-This is also the first step when the user attaches a `.pptx` and asks for a deck "in this design"
-or wants the attached deck extended: find its `file_id` here, then hand it straight to
+When the user attaches a `.pptx` and asks for a deck "in this design" or wants the attached deck
+extended, take its `file_id` from the attached-files block (or find it here), then hand it straight to
 `describe_pptx_template` / `create_powerpoint_from_layouts` / `add_slides_from_layouts` — no
 template upload needed. Only `create_powerpoint_from_template` (for a `{{}}` deck) takes nothing
 but a `template_name`, so such a deck must be uploaded as a template first. See

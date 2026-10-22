@@ -23,6 +23,10 @@ Tools zum Hochladen, Auflisten, Suchen, Herunterladen, Archivieren, Lesen und Er
 | `convert_to_markdown`          | Eine ganze Datei (z. B. eine E-Mail mit Anhängen) als ein `.md`-Dokument speichern – **sofern verfügbar**   |
 | `view_image`                   | Ein gespeichertes oder im Chat angehängtes Bild ansehen                                                     |
 
+## Angehängte Dateien
+
+Hat der Benutzer Dateien angehängt, stehen sie im Nachrichtenkontext in einem Block `Attached files in this message:` mit einer Zeile pro Datei: `- file_id: …, filename: …, type: …, size: … bytes` (plus `stored only`, wenn der Inhalt nicht in deinem Kontext ist). Übergib diese `file_id` als `librechat_file_id` (oder als `document_id`, wo ein Tool eine LibreChat-`file_id` annimmt). Nutze `list_my_files` nur, wenn es keinen solchen Block gibt, z. B. für eine Datei aus einem früheren Chat. Rate nie eine ID. Welches Tool bzw. welche App zu welcher Dateiaufgabe passt (companyFILES, Code-Ausführung, companyRAG, Transkription, Übersetzung): siehe **file-routing-skill**.
+
 ## Entscheidungshilfe
 
 ```
@@ -111,8 +115,8 @@ Alle Parameter sind optional. `search` ist eine Teilstring-Suche im Dateinamen o
 
 Liefert Dateien aus LibreChat (Chat-Uploads) und aus dem PVC (companyFILES-Speicher). Jeder Eintrag hat entweder `file_id` (LibreChat) oder `document_id` (PVC) oder beides. Verwende diese IDs in den Lese-Tools (`read_excel`, `read_word`, `read_pdf`, `read_file`), in `view_image` und in `convert_document`.
 
-Dies ist auch der erste Schritt, wenn der Benutzer eine `.pptx` anhängt und ein Deck „in diesem Design“
-möchte oder das angehängte Deck erweitert haben will: Ermittle hier ihre `file_id` und übergib sie direkt an
+Hängt der Benutzer eine `.pptx` an und möchte ein Deck „in diesem Design“ oder das angehängte Deck
+erweitert haben, nimm ihre `file_id` aus dem Block der angehängten Dateien (oder ermittle sie hier) und übergib sie direkt an
 `describe_pptx_template` / `create_powerpoint_from_layouts` / `add_slides_from_layouts` – ein
 Vorlagen-Upload ist nicht nötig. Nur `create_powerpoint_from_template` (für ein `{{}}`-Deck) nimmt
 ausschließlich einen `template_name` entgegen; ein solches Deck muss daher zuerst als Vorlage hochgeladen werden. Siehe

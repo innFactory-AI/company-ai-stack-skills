@@ -121,8 +121,9 @@ take the attachment directly. `create_powerpoint_from_template` does not: it has
 `template_name`, no `document_id` / `librechat_file_id`.
 
 ```
-FIND    list_my_files → pick the .pptx by filename → keep its file_id
-        (list_documents / search_documents work too — pass the entry's id)
+FIND    file_id from the "Attached files in this message:" block
+        (no block: list_my_files → pick the .pptx by filename; list_documents /
+        search_documents work too — pass the entry's id)
 PROBE   describe_pptx_template { "librechat_file_id": "<file_id>" }
         → hasLegacyPlaceholders decides the path (B vs C)
         read_powerpoint_slides { "librechat_file_id": "<file_id>" } if the deck has content

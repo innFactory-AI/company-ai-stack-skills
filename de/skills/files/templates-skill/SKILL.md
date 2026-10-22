@@ -1,6 +1,6 @@
 ---
 name: templates-skill
-description: 'Create documents from templates using companyFILES MCP tools. Use when asked to fill a template, use a company template, create a document from a predefined layout, fill placeholders, use a letterhead, fill an invoice template, or create from a DOCX/XLSX/POTX/ODT template. Covers Word, Excel, ODT, and PowerPoint template filling, including image placeholders and loop/repeat syntax.'
+description: 'Erstelle Dokumente aus Vorlagen mit companyFILES MCP-Tools. Verwende diesen Skill, wenn eine Vorlage ausgefüllt, eine Firmenvorlage oder ein Briefkopf verwendet, ein Dokument aus einem vordefinierten Layout erstellt, Platzhalter befüllt, eine Rechnungsvorlage ausgefüllt oder aus einer DOCX-/XLSX-/POTX-/ODT-Vorlage erstellt werden soll. Deckt Word-, Excel-, ODT- und PowerPoint-Vorlagen ab, inklusive Bildplatzhaltern und Schleifen-/Wiederholungssyntax, sowie die Übergabe einer Vorlage an den Code-Interpreter für Änderungen, die die Vorlagen-Tools nicht können.'
 ---
 
 # Vorlagen-Skill
@@ -18,12 +18,14 @@ Tools zum Auflisten und Ausfüllen von Dokumentvorlagen (Word, Excel, ODT, Power
 | `fill_excel_template`                   | XLSX-Vorlage mit `{{placeholder}}`-Syntax ausfüllen                                               |
 | `create_odt_from_template`              | ODT-Vorlage mit `{{placeholder}}`-Syntax ausfüllen                                                |
 | `create_powerpoint_from_template`       | POTX/PPTX-Vorlage mit Text, Bildern, Diagrammen, Sprechernotizen und Folienwiederholung ausfüllen |
+| `attach_template_to_chat`               | Kopie einer Vorlage für den Code-Interpreter an den Chat hängen                                   |
 
 ## Ablauf
 
 1. **Vorlagen ermitteln:** Rufe `list_templates` auf (optional nach `type` filtern: `docx`, `xlsx`, `potx`, `odt`, `pdf`)
 2. **Platzhalternamen** aus der Antwort notieren
 3. **Vorlage ausfüllen** mit dem passenden `create_*_from_template`-Tool
+4. **Nur wenn die Vorlagen-Tools es nicht können** (Massen- oder freie Änderungen im Layout der Vorlage) und Code-Ausführung verfügbar ist: `attach_template_to_chat`, dann per Code bearbeiten (siehe unten)
 
 ## Verwendung der Tools
 
@@ -259,6 +261,37 @@ Verwende dies, wenn die Vorlage mehrere mit `{{slide_type:xxx}}` markierte Layou
 
 Lass `repeat.slide` beim `slide_type`-Routing weg — die passende Vorlagenfolie wird automatisch über ihren `{{slide_type:xxx}}`-Marker gefunden. Die `slide_type`-Werte (`default`, `section`, `text-image`) entsprechen denselben Layoutnamen wie in `create_powerpoint`.
 
+---
+
+### attach_template_to_chat
+
+Hängt eine Kopie einer Vorlage (persönlich oder global) als Datei an den aktuellen Chat, damit der Code-Interpreter sie mit Python öffnen und bearbeiten kann — für Änderungen, die die `create_*_from_template`-Tools nicht können (z. B. einen Begriff im ganzen Dokument inklusive Tabellen und Fußzeilen ersetzen, viele Tabellenzeilen im Stil der Vorlage anfügen, ein Tabellenblatt neu aufbauen, Folien aus den Layouts des Masters anlegen).
+
+| Parameter | Typ | Pflicht | Beschreibung |
+| --- | --- | --- | --- |
+| `name` | string (max. 100) | ja | Vorlagenname genau wie von `list_templates` geliefert |
+| `type` | `docx` \| `xlsx` \| `potx` \| `odt` | ja | Vorlagentyp wie von `list_templates` geliefert (kein `pdf`) |
+
+```json
+{ "name": "invoice", "type": "docx" }
+```
+
+- **Voraussetzungen:** Code-Ausführung muss für den Chat oder Agenten aktiviert (und für die Rolle des Nutzers erlaubt) sein, und die Umgebung muss companyFILES-Dokumente als LibreChat-Dateien speichern. Sonst antwortet das Tool mit einem Fehler — bleib dann bei den Vorlagen-Tools.
+- **Nächster Zug:** Die Datei erreicht den Code-Interpreter erst ab der **nächsten** Nachricht des Nutzers (meist unter `/mnt/data/<name>.<type>`), nicht in derselben Antwort. Sag dem Nutzer, dass die Vorlage angehängt ist, und bitte ihn um seine nächste Nachricht (z. B. „weiter“).
+- Eine `potx`-Vorlage wird als `<name>.pptx` angehängt, damit python-pptx sie direkt öffnet.
+- Ein erneuter Aufruf ist günstig: Eine unveränderte Vorlage hängt dieselbe Datei wieder an, eine geänderte ersetzt die alte Kopie. Die Vorlage selbst bleibt unverändert.
+- Meldet das Tool, dass die Übergabe noch läuft, rufe es nach etwa 30 Sekunden mit denselben Angaben erneut auf — es entsteht keine zweite Kopie.
+
+#### Wenn Code-Ausführung verfügbar ist: Vorlage mit Python bearbeiten
+
+1. Prüfe, ob die Datei da ist (`/mnt/data/`) und die Bibliothek lädt (`import docx` / `openpyxl` / `pptx`).
+2. Ändere Text innerhalb der vorhandenen Runs/Zellen, damit das Layout bleibt; überschreibe nie die Eingabe — speichere das Ergebnis unter neuem Namen in `/mnt/data/`, es kommt als Chat-Anhang zurück.
+3. Öffne das Ergebnis erneut und prüfe auf übrig gebliebene Platzhalter, bevor du Erfolg meldest.
+
+Das ausführliche Rezept (Code für Word, Excel, PowerPoint, Stolperfallen wie verlorene Diagramme bei openpyxl) steht in der mitgelieferten Datei `references/code-template-editing.md` — lies sie mit dem eingebauten `read_file`-Tool, Pfad `templates-skill/references/code-template-editing.md` (nicht das gleichnamige companyFILES-Tool). Sie ist nur vorhanden, wenn dieser Skill als Paket (zip) installiert wurde; wurde nur `SKILL.md` eingefügt, nutze die drei Schritte oben.
+
+**Ohne Code-Ausführung** (oder wenn Datei oder Bibliothek fehlen): Fülle die Vorlage mit den `create_*_from_template`-Tools oben aus und verfeinere das Ergebnis mit den iterativen Tools unten (`append_to_word`, `replace_word_content`, `append_slides_to_powerpoint` mit `reference_slide`, `modify_excel`). Für ODT gibt es in der Standard-Sandbox keine Python-Bibliothek: nimm `create_odt_from_template`.
+
 ## Bearbeitung nach dem Ausfüllen (iterative Aktualisierungen)
 
 Jedes Vorlagen-Tool liefert die `id` des neuen Dokuments. Übergib sie als `document_id` an die iterativen Bearbeitungstools aus **word-odt-skill** und **powerpoint-skill**, um das ausgefüllte Dokument weiter anzupassen, ohne es neu zu erzeugen.
@@ -318,3 +351,4 @@ Beispiel — Vorlage ausfüllen und anschließend eine eigene Abschlussfolie anf
 - `replace_missing: false` (Standard) lässt nicht befüllte `{{placeholder}}`-Tokens unverändert; `true` ersetzt sie durch einen leeren String.
 - Warnungen zu fehlenden Platzhaltern sind gegebenenfalls in der Antwort enthalten.
 - Nutze nach dem Ausfüllen die iterativen Tools (`append_to_word`, `append_slides_to_powerpoint` usw.), um Inhalte hinzuzufügen oder zu aktualisieren — die `document_id` bleibt dabei durchgehend gleich.
+- `attach_template_to_chat` ist der Ausnahmeweg für Änderungen, die die Vorlagen-Tools nicht können; er braucht Code-Ausführung und wirkt ab der nächsten Nachricht des Nutzers.

@@ -125,8 +125,9 @@ Vorlage hochzuladen** – die Layout-Tools, `read_powerpoint_slides`, `append_sl
 Es hat nur `template_name`, kein `document_id` / `librechat_file_id`.
 
 ```
-FIND    list_my_files → die .pptx anhand des Dateinamens wählen → ihre file_id merken
-        (list_documents / search_documents funktionieren auch – die id des Eintrags übergeben)
+FIND    file_id aus dem Block "Attached files in this message:"
+        (kein Block: list_my_files → die .pptx anhand des Dateinamens wählen; list_documents /
+        search_documents funktionieren auch – die id des Eintrags übergeben)
 PROBE   describe_pptx_template { "librechat_file_id": "<file_id>" }
         → hasLegacyPlaceholders entscheidet den Weg (B oder C)
         read_powerpoint_slides { "librechat_file_id": "<file_id>" }, wenn der Foliensatz Inhalte hat,

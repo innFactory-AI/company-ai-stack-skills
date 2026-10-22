@@ -1,7 +1,0 @@
----
-title: Vorlagen-Skill
-description: Erstelle Dokumente aus Vorlagen mit companyFILES MCP-Tools — Word, Excel, ODT und PowerPoint, inklusive Bildplatzhaltern, Diagrammen sowie Schleifen-/Wiederholungssyntax.
-label: Vorlagen
----
-
-Verwende diesen Skill, wenn du eine Vorlage ausfüllen, einen Firmenbriefkopf oder ein Rechnungslayout verwenden, Platzhalter befüllen oder Dokumente aus DOCX-, XLSX-, POTX- oder ODT-Vorlagen erstellen möchtest — inklusive Bildplatzhaltern, Diagrammen und Folienwiederholung sowie nachträglicher Bearbeitung des ausgefüllten Dokuments.

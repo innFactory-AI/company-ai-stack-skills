@@ -76,5 +76,5 @@ Returns `{ conversions: [{ from, to: [...] }] }` — one entry per source format
 ## Key Notes
 
 - `title` and `author` are only used when the output is `word`, `pdf` or `odt`.
-- To get a file ID to convert, use `list_my_files` (from **file-management-skill**) to discover `librechat_file_id` or `document_id` values.
+- To get a file ID to convert, take the `file_id` of an attachment from the `Attached files in this message:` block, or use `list_my_files` (from **file-management-skill**) to discover `librechat_file_id` or `document_id` values.
 - For reading document content without conversion, use `read_excel` / `read_word` / `read_pdf` from their respective skills.

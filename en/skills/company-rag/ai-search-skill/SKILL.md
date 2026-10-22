@@ -76,6 +76,14 @@ The tool returns **all** matching chunks, with no upper limit. Filter as narrowl
 | `keyword` | Exact terms, product names, error codes, IDs, standard numbers |
 | `hybrid` | Conceptual question with exact terms. Also a good second attempt. |
 
+## Files Attached in the Chat
+
+companyRAG cannot index files the user attaches in the chat; `search_content` only finds documents that are already in the collection. For a question about an attached file, do not search for it here:
+
+- If code execution is available, analyse the file in the sandbox (`/mnt/data/<filename>`).
+- Otherwise read it with the companyFILES read tools (`read_pdf`, `read_word`, `read_excel`, `read_file` if available) and its `file_id` from the `Attached files in this message:` block.
+- If the content should be searchable permanently or for others, it has to be added to a companyRAG collection through the companyRAG UI or by an admin. Say so instead of promising to "add" it.
+
 ## Rules
 
 1. **Search first, then answer.** Make at least one tool call before every answer. Never answer from general knowledge.

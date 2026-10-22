@@ -1,6 +1,6 @@
 ---
 name: excel-skill
-description: 'Erstelle, lies und bearbeite Excel-Tabellen (.xlsx) mit companyFILES MCP-Tools. Verwende diesen Skill, wenn eine Tabelle erstellt, Daten nach Excel exportiert, eine Excel-Datei gelesen oder ausgewertet, Zellen bearbeitet, Blätter hinzugefügt oder Formeln, bedingte Formatierung oder Autofilter angewendet werden sollen. Deckt CSV-zu-Excel, JSON-zu-Excel, 2D-Array-Eingaben, komplexe Mehrblatt-Arbeitsmappen und das direkte Bearbeiten bestehender Dateien ab.'
+description: 'Erstelle, lies und bearbeite Excel-Tabellen (.xlsx) mit companyFILES MCP-Tools. Verwende diesen Skill, wenn eine Tabelle erstellt, Daten nach Excel exportiert, eine Excel-Datei gelesen oder ausgewertet, Zellen bearbeitet, Blätter hinzugefügt oder Formeln, bedingte Formatierung oder Autofilter angewendet werden sollen. Deckt CSV-zu-Excel, JSON-zu-Excel, 2D-Array-Eingaben, komplexe Mehrblatt-Arbeitsmappen, das direkte Bearbeiten bestehender Dateien und die Auswertung angehängter Tabellen ab.'
 ---
 
 # Excel Skill
@@ -34,7 +34,14 @@ Benutzer will Excel-Inhalte lesen / auswerten...
   Nur Werte             → read_excel
   Formeln & Metadaten   → read_excel_detailed
   .xls / .xlsb / .ods   → read_file  (file-management-skill, falls verfügbar)
+
+Benutzer will Berechnungen / Pivots / Statistik auf einer angehängten Tabelle
+                        → Code-Ausführung, falls verfügbar, sonst read_excel + schrittweise (siehe „Optional“ unten)
 ```
+
+## Angehängte Tabellen
+
+Eine vom Benutzer angehängte Tabelle steht im Block `Attached files in this message:` (`- file_id: …, filename: …`). Übergib diese `file_id` als `librechat_file_id` an `read_excel`, `read_excel_detailed` oder `modify_excel`; nutze `list_my_files` nur, wenn es keinen solchen Block gibt. Rate nie eine ID. Für andere Dateiaufgaben und Apps siehe **file-routing-skill**.
 
 ## Tool-Verwendung
 
@@ -152,6 +159,17 @@ Akzeptiert genau eines von `file_content` (base64), `librechat_file_id` oder `do
 ```
 
 Dieselben Eingabeoptionen wie `read_excel` (`file_content` / `librechat_file_id` / `document_id`, optional `sheet_name`). Liefert Werte, Formeln, Kommentare, Validierungsregeln, Hyperlinks, benannte Bereiche, verbundene Zellen und Eigenschaften der Arbeitsmappe.
+
+## Optional: Wenn Code-Ausführung verfügbar ist — angehängte Tabellen auswerten
+
+Für Berechnungen, Filter, Gruppierungen, Pivots, Statistik oder Diagramme auf einer angehängten CSV/XLSX ist Code-Ausführung zuverlässiger, als Werte zu lesen und im Kopf zu rechnen.
+
+1. Der Anhang liegt in der Sandbox unter `/mnt/data/<dateiname>` (prüfen mit `os.listdir("/mnt/data")`).
+2. Zuerst `import pandas`; fehlt es, nimm die Alternative. Laden mit `pd.read_excel(pfad, sheet_name=None)` (alle Blätter) oder `pd.read_csv(pfad, sep=None, engine="python")`; deutsche Exporte brauchen oft `decimal=","` und `thousands="."`.
+3. Sieh dir Form, Spalten und Datentypen an, bevor du rechnest. Berichte die Zahlen aus der Code-Ausgabe, keine Schätzungen.
+4. Ergebnis als Datei: Für eine formatierte Arbeitsmappe im Corporate Design übergib die Ergebnistabelle an `create_excel_advanced` / `create_excel_from_json`. Eine in der Sandbox geschriebene Datei (unter neuem Namen in `/mnt/data/` speichern, nie die Eingabe überschreiben) kommt als Chat-Anhang zurück, aber ohne das companyFILES-Farbschema.
+
+**Ohne Code-Ausführung:** `read_excel { "librechat_file_id": "<file_id>" }` (bei großen Arbeitsmappen je Blatt mit `sheet_name`), aus den gelieferten Werten Schritt für Schritt rechnen und die Zwischenergebnisse zeigen. Für ein Diagramm `show_interactive_chart` / `create_chart_document` (**charts-diagram-skill**). Ist die Datei zu groß, um sie vollständig zu lesen, sag das und werte ein benanntes Blatt oder einen Bereich aus.
 
 ## Wichtige Hinweise
 

@@ -1,6 +1,6 @@
 ---
 name: excel-skill
-description: 'Create, read, and modify Excel (.xlsx) spreadsheets with companyFILES MCP tools. Use when asked to create a spreadsheet, export data to Excel, read or parse an Excel file, edit cells, add sheets, apply formulas, conditional formatting, or auto-filters. Covers CSV-to-Excel, JSON-to-Excel, 2D array input, advanced multi-sheet workbooks, and in-place modification.'
+description: 'Create, read, and modify Excel (.xlsx) spreadsheets with companyFILES MCP tools. Use when asked to create a spreadsheet, export data to Excel, read or parse an Excel file, edit cells, add sheets, apply formulas, conditional formatting, or auto-filters. Covers CSV-to-Excel, JSON-to-Excel, 2D array input, advanced multi-sheet workbooks, in-place modification, and analysing attached spreadsheets.'
 ---
 
 # Excel Skill
@@ -34,7 +34,14 @@ User wants to read / parse Excel content...
   Just values         → read_excel
   Formulas & metadata → read_excel_detailed
   .xls / .xlsb / .ods → read_file  (file-management-skill, if available)
+
+User wants calculations / pivots / statistics on an attached sheet
+                      → code execution if available, else read_excel + step-by-step (see "Optional" below)
 ```
+
+## Attached Spreadsheets
+
+A spreadsheet the user attached appears in the `Attached files in this message:` block (`- file_id: …, filename: …`). Pass that `file_id` as `librechat_file_id` to `read_excel`, `read_excel_detailed` or `modify_excel`; use `list_my_files` only if there is no such block. Never guess an ID. For other file tasks and apps, see the **file-routing-skill**.
 
 ## Tool Usage
 
@@ -152,6 +159,17 @@ Accepts any one of `file_content` (base64), `librechat_file_id`, or `document_id
 ```
 
 Same input options as `read_excel` (`file_content` / `librechat_file_id` / `document_id`, optional `sheet_name`). Returns values, formulas, comments, validation rules, hyperlinks, named ranges, merged cells, and workbook properties.
+
+## Optional: If Code Execution Is Available — Analysing Attached Spreadsheets
+
+For calculations, filters, group-bys, pivots, statistics or charts on an attached CSV/XLSX, code execution is more reliable than reading values and computing in your head.
+
+1. The attachment is in the sandbox at `/mnt/data/<filename>` (check with `os.listdir("/mnt/data")`).
+2. `import pandas` first; if it is missing, use the fallback. Load with `pd.read_excel(path, sheet_name=None)` (all sheets) or `pd.read_csv(path, sep=None, engine="python")`; German exports often need `decimal=","` and `thousands="."`.
+3. Look at shape, columns and dtypes before you compute. Report the figures from the code output, not estimates.
+4. Result as a file: for a formatted workbook in the corporate design, pass the result table to `create_excel_advanced` / `create_excel_from_json`. A file written in the sandbox (save under a new name in `/mnt/data/`, never overwrite the input) comes back as a chat attachment but without the companyFILES theme.
+
+**Fallback without code execution:** `read_excel { "librechat_file_id": "<file_id>" }` (per sheet with `sheet_name` for large workbooks), compute from the returned values step by step and show your intermediate figures. For a chart use `show_interactive_chart` / `create_chart_document` (**charts-diagram-skill**). If the file is too large to read completely, say so and analyse a named sheet or range.
 
 ## Key Notes
 

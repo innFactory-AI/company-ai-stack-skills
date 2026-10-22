@@ -10,8 +10,17 @@ skill page, the skills index and the sidebar. Never edit skill pages in the docs
 ```text
 catalog.json                                   # categories, order, index texts (DE/EN)
 <locale>/skills/<category>/<slug>/SKILL.md     # the skill: what users upload in companyGPT under "Skills"
-<locale>/skills/<category>/<slug>/page.md      # docs wrapper: title, description, sidebar label, intro
+<locale>/skills/<category>/<slug>/references/… # optional bundled files (Markdown recipes; optionally scripts/…)
+<locale>/pages/<category>/<slug>.md            # docs wrapper: title, description, sidebar label, intro
 ```
+
+- **Package = the skill folder.** Put nothing docs-only into it: companyADMIN Library Sync imports every file in a
+  folder that has a `SKILL.md`, which is why the docs wrapper lives under `pages/`. Everything in the folder
+  (`SKILL.md`, `references/`, `scripts/`, …) is part of the skill package: the docs offer it as a zip (`<name>/SKILL.md` plus
+  bundled files) that companyGPT imports under Skills (`.zip`/`.skill`). The agent reads bundled files with the
+  built-in `read_file` tool (`<name>/references/x.md`, works without code execution); with code execution they are
+  also copied read-only to `/mnt/data/skills/<name>/…` in the sandbox. A skill pasted or uploaded as a single
+  `SKILL.md` has no bundled files.
 
 - `<locale>` is `de` and `en`. Every skill exists in **both**, with the same `<category>/<slug>`.
 - `<slug>` is the docs URL (`/de/tutorials/skills/<category>/<slug>`). Don't rename a slug once it is live; links
@@ -39,7 +48,7 @@ description: One or two sentences; LibreChat uses it to decide when to load the 
 - Body max. 100,000 characters. The docs wrap it in a fence that is longer than any backtick run inside, so inner
   ```` ``` ```` blocks are fine.
 
-### page.md
+### pages/<category>/<slug>.md
 
 ```markdown
 ---
@@ -63,12 +72,20 @@ the skill. The generator adds `## Skill`, the fenced `SKILL.md` and a source lin
 - **Language:** DE files are German (du-form), EN files English. Keep the `name:` slug, tool/parameter names, product
   names (companyFILES, companyRAG, MCP, …) and format keywords (PDF, DOCX, XLSX) unchanged. DE and EN must say the
   same thing; change both in one PR.
-- **Prompt-only:** skills must work as plain instructions, without Python, shell or code-interpreter steps. Code
-  execution is not enabled in every tenant, and the docs/download path ships a single `SKILL.md`. Point to companyFILES
-  for file output (DOCX/XLSX/PPTX/PDF) and to companyRAG collections / MCP servers / file upload for data.
+- **Prompt-first, code optional:** every `SKILL.md` must work as plain instructions without code execution. Code
+  execution (sandbox without network; Python/Node/Bash) is on in most tenants, but not everywhere: the tenant, the
+  role permission `RUN_CODE` or the user can switch it off. Point to companyFILES for file output (DOCX/XLSX/PPTX/PDF)
+  and to companyRAG collections / MCP servers / file upload for data.
+  - Code steps go into an optional section that starts with "If code execution is available …" (DE: "Wenn
+    Code-Ausführung verfügbar ist …") and always names the fallback without code (usually a companyFILES tool).
+  - Check Python packages with `import` before relying on them, and fall back if one is missing.
+  - Longer recipes or scripts go into bundled files next to `SKILL.md` (`references/<topic>.md`, optionally
+    `scripts/…`), in both locales. Reference them from `SKILL.md` with a note that they only exist when the skill was
+    installed as a package (zip / sync), not when only `SKILL.md` was pasted. `SKILL.md` must still be complete
+    without them.
 - **Tools must be real.** Every tool name, parameter, enum and limit in a skill must exist in the current release of
   the app that provides it. Check the source before changing a skill:
-  - companyFILES: `src/mcp/server.ts`, `cad-tools.ts`, `docs-tools.ts`, `ui-tools.ts` (repo `innFactory/companyFILES`;
+  - companyFILES: `src/mcp/server.ts`, `cad-tools.ts`, `docs-tools.ts`, `ui-tools.ts`, `template-handoff-tools.ts` (repo `innFactory/companyFILES`;
     it also keeps reviewed templates in `.skills/*/SKILL.md`). Some tools only exist when an extension is configured
     (CAD tools, `read_file`/`convert_to_markdown`, Azure-Maps map options); say "if available" for those.
   - companyRAG: `apps/mcp/internal/handlers/` (repo `innFactory/companyRAG`). The MCP server is usually called
@@ -79,7 +96,7 @@ the skill. The generator adds `## Skill`, the fenced `SKILL.md` and a source lin
 
 ## Workflow
 
-1. Branch, edit `SKILL.md` and/or `page.md` in both locales, update `catalog.json` and the README table for new
+1. Branch, edit `SKILL.md` and/or the page wrapper in both locales, update `catalog.json` and the README table for new
    skills.
 2. Preview locally with a docs checkout next to this repo:
    `cd ../docs && SKILLS_DIR=../company-ai-stack-skills npm run dev` (or `npm run build`).

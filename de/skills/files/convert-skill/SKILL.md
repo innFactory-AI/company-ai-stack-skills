@@ -76,5 +76,5 @@ Liefert `{ conversions: [{ from, to: [...] }] }` – einen Eintrag pro Quellform
 ## Wichtige Hinweise
 
 - `title` und `author` werden nur verwendet, wenn die Ausgabe `word`, `pdf` oder `odt` ist.
-- Um eine Datei-ID für die Konvertierung zu erhalten, ermittle mit `list_my_files` (aus dem **file-management-skill**) die Werte für `librechat_file_id` oder `document_id`.
+- Um eine Datei-ID für die Konvertierung zu erhalten, nimm die `file_id` eines Anhangs aus dem Block `Attached files in this message:` oder ermittle mit `list_my_files` (aus dem **file-management-skill**) die Werte für `librechat_file_id` oder `document_id`.
 - Um Dokumentinhalte ohne Konvertierung zu lesen, verwende `read_excel` / `read_word` / `read_pdf` aus den jeweiligen Skills.

@@ -19,7 +19,8 @@
         "en": "General"
       },
       "skills": [
-        "tool-search-skill"
+        "tool-search-skill",
+        "file-routing-skill"
       ]
     },
     {

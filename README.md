@@ -1,20 +1,22 @@
 # CompanyGPT Agent Skills
 
-Ready-made agent skills for CompanyGPT, available in German and English — 74 skills across 12 categories.
+Ready-made agent skills for CompanyGPT, available in German and English — 75 skills across 12 categories.
 
 Each skill is a self-contained prompt that teaches an agent one job: how to run a QBR, prep a
-deployment, audit SEO, or query a companyRAG collection. They are prompt-only — no scripts, no
-code execution — and are designed around CompanyGPT's MCP servers, companyRAG collections, and
-companyFILES output tools.
+deployment, audit SEO, or query a companyRAG collection. They are prompt-first: every skill works
+without code execution and is designed around CompanyGPT's MCP servers, companyRAG collections, and
+companyFILES output tools. Some skills add an optional code-execution section (always with a
+fallback) and bundle longer recipes as extra files (`references/…`), which the agent only has when
+the skill is installed as a package (zip), not when just `SKILL.md` is pasted.
 
 ## Layout
 
 ```text
 catalog.json                                   # categories, order, docs index texts
 de/skills/<category>/<skill-name>/SKILL.md     # German skill
-de/skills/<category>/<skill-name>/page.md      # German docs page wrapper (title, label, intro)
 en/skills/<category>/<skill-name>/SKILL.md     # English skill
-en/skills/<category>/<skill-name>/page.md      # English docs page wrapper
+<locale>/skills/<category>/<skill-name>/references/  # optional bundled files (part of the skill package)
+<locale>/pages/<category>/<skill-name>.md      # docs page wrapper (title, label, intro)
 ```
 
 Every skill carries YAML frontmatter with a `name` (required) and `description`. The `name` slug is
@@ -26,7 +28,10 @@ redeploys the docs. See [AGENTS.md](AGENTS.md) for the authoring rules and workf
 
 ## Usage
 
-In CompanyGPT, upload a `SKILL.md` under **Skills**, or paste its contents into a new skill. The
+In CompanyGPT, upload a `SKILL.md` under **Skills**, or paste its contents into a new skill. Skills
+with bundled files are uploaded as a zip package of the skill folder; the docs offer it as a download.
+Administrators can also connect this repo in companyADMIN **Library Sync** (path `de/skills` or
+`en/skills`, one language per tenant, no token needed) to provide all skills to the organization. The
 agent picks the skill up when a request matches its `description`. Placeholders such as
 `<your-collection>` / `<deine-collection>` need to be filled in with your own values first.
 
@@ -37,6 +42,7 @@ agent picks the skill up when a request matches its `description`. Placeholders 
 | Skill | DE | EN |
 | --- | --- | --- |
 | Tool Search · Tool-Suche | [`SKILL.md`](de/skills/generic/tool-search-skill/SKILL.md) | [`SKILL.md`](en/skills/generic/tool-search-skill/SKILL.md) |
+| File Routing · Datei-Routing | [`SKILL.md`](de/skills/generic/file-routing-skill/SKILL.md) | [`SKILL.md`](en/skills/generic/file-routing-skill/SKILL.md) |
 
 ### companyRAG
 
