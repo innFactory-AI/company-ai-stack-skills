@@ -1,39 +1,40 @@
 ---
 name: settings-ui-skill
-description: Open the companyFILES web UI, view settings, and get help on available tools. Use when asked to show documents, browse files, open the file manager, manage templates, change settings, view branding/colors, or get help on how to use companyFILES tools. Also use when the user wants an interactive embedded view instead of raw JSON.
+description: 'Die companyFILES-Web-UI öffnen, Einstellungen anzeigen und Hilfe zu den verfügbaren Tools erhalten. Verwenden, wenn Dokumente angezeigt, Dateien durchsucht, der Dateimanager geöffnet, Vorlagen verwaltet, Einstellungen geändert, Branding/Farben angezeigt oder Hilfe zur Nutzung der companyFILES-Tools gewünscht werden. Auch verwenden, wenn der Benutzer statt rohem JSON eine interaktive eingebettete Ansicht möchte.'
 ---
 
-# Settings & UI Skill
+# Einstellungen & UI Skill
 
-Tools for opening the companyFILES web app as an embedded UI, retrieving settings, and getting tool help.
+Tools, um die companyFILES-Web-App als eingebettete UI zu öffnen, Einstellungen abzurufen und Hilfe zu den Tools zu erhalten.
 
-## Tools in This Skill
+## Tools in diesem Skill
 
-| Tool | Purpose |
-|------|---------|
-| `open_companyfiles_ui` | Open the companyFILES web app as an embedded iframe |
-| `get_settings` | Get resolved org/user settings (colors, company name, logo) |
-| `help` | Get usage examples for any companyFILES tool category |
+| Tool                   | Zweck                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `open_companyfiles_ui` | Die companyFILES-Web-App als eingebetteten iframe öffnen                           |
+| `get_settings`         | Aufgelöste Organisations-/Benutzereinstellungen abrufen (Farben, Firmenname, Logo) |
+| `help`                 | Anwendungsbeispiele für jede companyFILES-Tool-Kategorie abrufen                   |
 
-## Decision Guide
+## Entscheidungshilfe
 
 ```
-User says "show my files" / "open file manager"    → open_companyfiles_ui page="documents"
-User says "manage / browse templates"               → open_companyfiles_ui page="templates"
-User says "upload a file" (via UI)                  → open_companyfiles_ui page="documents"
-User says "open settings" / "change preferences"   → open_companyfiles_ui page="settings"
+Benutzer sagt „zeig meine Dateien“ / „Dateimanager öffnen“  → open_companyfiles_ui page="documents"
+Benutzer sagt „Vorlagen verwalten / durchsuchen“            → open_companyfiles_ui page="templates"
+Benutzer sagt „eine Datei hochladen“ (über die UI)          → open_companyfiles_ui page="documents"
+Benutzer sagt „eine Vorlage hochladen“ (über die UI)        → open_companyfiles_ui page="upload"
+Benutzer sagt „Einstellungen öffnen“ / „Präferenzen ändern“ → open_companyfiles_ui page="settings"
 
-User asks about settings / colors / logo            → get_settings
-User asks how to use a tool / needs examples        → help (with topic)
+Benutzer fragt nach Einstellungen / Farben / Logo           → get_settings
+Benutzer fragt, wie ein Tool funktioniert / braucht Beispiele → help (mit topic)
 ```
 
-**Always call the tool immediately — never just describe what the user could do.**
+**Rufe das Tool immer sofort auf – beschreibe nie nur, was der Benutzer tun könnte.**
 
-## Tool Usage
+## Tool-Verwendung
 
 ### open_companyfiles_ui
 
-Renders the companyFILES SPA as an embedded interactive iframe in the chat.
+Rendert die companyFILES-SPA als eingebetteten interaktiven iframe im Chat.
 
 ```json
 {
@@ -41,27 +42,30 @@ Renders the companyFILES SPA as an embedded interactive iframe in the chat.
 }
 ```
 
-Available pages (enum — only these four values are accepted):
-| Page | Shows |
+Verfügbare Seiten (Enum – nur diese vier Werte werden akzeptiert):
+| Seite | Zeigt |
 |------|-------|
-| `documents` | File list, upload, download, folder navigation |
-| `templates` | Template browser, upload personal templates |
-| `upload` | File upload view |
-| `settings` | Org/user branding, colors, logo, language |
+| `documents` | Dokumentliste (einschließlich Chat-Uploads), Datei-Upload, Vorschau, Download |
+| `templates` | Vorlagen-Browser, Hochladen persönlicher Vorlagen |
+| `upload` | Formular zum Hochladen einer neuen Vorlage |
+| `settings` | Reiter **Meine Einstellungen** (persönliche Farben, Typografie, Dokument-Standards, Logo) und **Organisation** (Firmendaten, Organisationsfarben und -logo – ohne Admin-Berechtigung nur lesbar; Admins bearbeiten zusätzlich Typografie und Dokument-Standards der Organisation) |
 
-> Note: UI widgets require a chat client that supports MCP UI rendering (e.g. LibreChat). Google Gemini falls back to text.
+Die Einstellungsseite enthält keine Spracheinstellung – die Sprache wird im Kontomenü der companyFILES-Web-App umgestellt. Die Seite **Visualisierungen** der Web-App (Diagramme, Schaubilder und Karten aus dem Chat) ist kein `page`-Wert und kann nicht mit `open_companyfiles_ui` geöffnet werden.
+
+> Hinweis: UI-Widgets erfordern einen Chat-Client, der MCP-UI-Rendering unterstützt (z. B. LibreChat). Google Gemini fällt auf Text zurück.
 
 ---
 
 ### get_settings
 
-Returns the resolved settings: org defaults merged with user overrides.
+Liefert die aufgelösten Einstellungen: Organisations-Standards zusammengeführt mit Benutzer-Überschreibungen.
 
 ```json
 {}
 ```
 
-Example response:
+Beispielantwort:
+
 ```json
 {
   "companyName": "Acme Corp",
@@ -70,17 +74,17 @@ Example response:
   "secondaryColor": "#66aacc",
   "accentColor": "#ff6600",
   "hasLogo": true,
-  "sources": {"companyName": "org", "primaryColor": "user"}
+  "sources": { "companyName": "org", "primaryColor": "user" }
 }
 ```
 
-`logoPath` is intentionally omitted (internal filesystem path). To view or change the logo, use `open_companyfiles_ui page="settings"`.
+`logoPath` wird absichtlich weggelassen (interner Dateisystempfad). Um das Logo anzusehen oder zu ändern, verwende `open_companyfiles_ui page="settings"`.
 
 ---
 
 ### help
 
-Get detailed usage examples for a specific tool category.
+Liefert ausführliche Anwendungsbeispiele für eine bestimmte Tool-Kategorie.
 
 ```json
 {
@@ -88,12 +92,12 @@ Get detailed usage examples for a specific tool category.
 }
 ```
 
-Available topics: `excel`, `word`, `pdf`, `powerpoint`, `text`, `chart`, `mermaid`, `zip`, `assets`, `upload`, `templates`, `admin`, `settings`, `convert`, `read`, `ui`, `all`
+Verfügbare Themen: `excel`, `word`, `pdf`, `powerpoint`, `text`, `chart`, `mermaid`, `map`, `zip`, `upload`, `templates`, `admin`, `convert`, `read`, `settings`, `assets`, `ui`, `provenance` (KI-Kennzeichnung in den Datei-Metadaten), `all` – sowie `cad` und `docs`, wo diese Erweiterungen verfügbar sind. Ein unbekanntes Thema liefert die Liste der verfügbaren Themen.
 
-Omitting `topic` (or using `"all"`) returns the full help document and also opens the embedded UI.
+Ohne `topic` (oder mit `"all"`) wird das vollständige Hilfedokument zurückgegeben und zusätzlich die eingebettete UI geöffnet.
 
-## Key Notes
+## Wichtige Hinweise
 
-- `open_companyfiles_ui` is the default tool for any request to browse, view, or manage files/templates/settings interactively.
-- Settings colors (`primaryColor`, `secondaryColor`, `accentColor`) are automatically used as the theme in all document and chart creation tools. `get_settings` only returns this core subset; the full settings model holds many more org/user-overridable fields that also feed generated documents — extended colors (`headingColor`, `bodyTextColor`, `linkColor`, `tableHeaderBg`, `tableHeaderText`, `codeBg`), typography (`fontHeading`, `fontBody`, `fontCode`, `fontSize*`), and document defaults (`defaultPageSize`, `defaultPageOrientation`, `defaultHeaderText`, `defaultFooterText`, `defaultShowPageNumbers`, `defaultPageNumberPosition`, `defaultPageNumberFormat`, `logoInHeader`, `logoHeaderHeight`).
-- To edit settings, use the UI (`open_companyfiles_ui page="settings"`) or, for admins, `PUT /api/ui/admin/settings` (gated by an admin UI session/bearer token — the legacy `X-API-Key` admin routes were removed).
+- `open_companyfiles_ui` ist das Standard-Tool für jede Anfrage, Dateien/Vorlagen/Einstellungen interaktiv zu durchsuchen, anzuzeigen oder zu verwalten.
+- Die Farben aus den Einstellungen (`primaryColor`, `secondaryColor`, `accentColor`) werden automatisch als Theme in allen Tools zur Dokument- und Diagrammerstellung verwendet. `get_settings` liefert nur diese Kernauswahl; das vollständige Einstellungsmodell enthält viele weitere, auf Organisations- oder Benutzerebene überschreibbare Felder, die ebenfalls in erzeugte Dokumente einfließen – erweiterte Farben (`headingColor`, `bodyTextColor`, `linkColor`, `tableHeaderBg`, `tableHeaderText`, `codeBg`), Typografie (`fontHeading`, `fontBody`, `fontCode`, `fontSize*`) und Dokument-Standards (`defaultPageSize`, `defaultPageOrientation`, `defaultHeaderText`, `defaultFooterText`, `defaultShowPageNumbers`, `defaultPageNumberPosition`, `defaultPageNumberFormat`, `logoInHeader`, `logoHeaderHeight`).
+- Zum Bearbeiten der Einstellungen verwende die UI (`open_companyfiles_ui page="settings"`): persönliche Werte unter **Meine Einstellungen**, Organisationswerte unter **Organisation**. Das Ändern von Organisationseinstellungen und Branding erfordert die companyFILES-Admin-Berechtigung (`ext:files:admin`); das Hochladen oder Hochstufen globaler Vorlagen erfordert die Vorlagen-Berechtigung (`ext:files:templates`). Benutzer ohne diese Berechtigungen verwalten nur ihre persönlichen Einstellungen und Vorlagen.

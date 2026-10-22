@@ -17,6 +17,7 @@ Gather context from calendars, email, chat, and notes to draft agendas, compile 
 | **Documents via MCP** (e.g. Notion, Confluence, Google Docs) | Prior meeting notes, shared documents, project pages |
 | **CRM via MCP** (e.g. Salesforce, HubSpot) | Account history, deal status, contact details (for external meetings) |
 | **Issue tracker via MCP** (e.g. Jira, Linear, Asana) | Open items relevant to the meeting topic |
+| **companyM365** (if enabled) | Outlook calendar and mail, Teams messages and OneDrive/SharePoint documents from your Microsoft 365 account |
 | **companyRAG / file upload** | Recurring meeting templates, background documents |
 
 > **No connected source?** Provide the data in chat or upload the relevant files — the skill works the same way.

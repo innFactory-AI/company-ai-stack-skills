@@ -12,6 +12,7 @@ Bewerte Skill-Lücken, ordne Entwicklungsmaßnahmen einem Karriere-Framework zu 
 | Quelle | Was sie beiträgt |
 | --- | --- |
 | **LMS über MCP** (z. B. Moodle, Cornerstone, SAP SuccessFactors) | Lernkatalog, absolvierte Kurse, Zertifizierungen, verfügbare Lernpfade |
+| **companyLEARN** (falls aktiviert) | Interner Kurskatalog und Kursübersichten sowie dein eigener Lernfortschritt |
 | **HRIS über MCP** (z. B. Workday, Personio, Bamboo HR) | Rollen und Level, Team-Roster, Performance-Daten, Karriere-Framework |
 | **companyRAG / Datei-Upload** | Kompetenz-Frameworks, Job-Architektur, Self- und Manager-Assessments, 360-Feedback |
 

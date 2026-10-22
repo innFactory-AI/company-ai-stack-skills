@@ -12,6 +12,7 @@ Assess skill gaps, map development activities to a career framework, and design 
 | Source | What It Adds |
 | --- | --- |
 | **LMS via MCP** (e.g. Moodle, Cornerstone, SAP SuccessFactors) | Learning catalogue, completed courses, certifications, available learning paths |
+| **companyLEARN** (if enabled) | Internal course catalogue and course overviews, plus your own learning progress |
 | **HRIS via MCP** (e.g. Workday, Personio, BambooHR) | Roles and levels, team roster, performance data, career framework |
 | **companyRAG / file upload** | Competency frameworks, job architecture, self- and manager assessments, 360 feedback |
 

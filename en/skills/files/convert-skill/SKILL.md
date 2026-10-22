@@ -1,6 +1,6 @@
 ---
 name: convert-skill
-description: Convert documents between formats with companyFILES MCP tools. Use when asked to convert a file, change format, export Word to PDF, convert Excel to CSV or JSON, transform Markdown to Word or PDF, or convert HTML to Word. Also covers listing all supported conversion pairs.
+description: 'Convert documents between formats with companyFILES MCP tools. Use when asked to convert a file, change format, export Word to PDF, convert Excel to CSV or JSON, transform Markdown to Word or PDF, or convert HTML to Word. Also covers listing all supported conversion pairs.'
 ---
 
 # Convert Skill
@@ -9,24 +9,26 @@ Tools for converting documents between formats.
 
 ## Tools in This Skill
 
-| Tool | Purpose |
-|------|---------|
-| `convert_document` | Convert a file between supported formats |
+| Tool                        | Purpose                                    |
+| --------------------------- | ------------------------------------------ |
+| `convert_document`          | Convert a file between supported formats   |
 | `get_supported_conversions` | List all supported format conversion pairs |
 
 ## Supported Conversions
 
-| From | To |
-|------|----|
-| Excel | CSV, JSON, Markdown, HTML |
-| CSV | Excel, JSON, Markdown, HTML |
-| JSON | Excel, CSV, Markdown |
-| Word | Text, Markdown, HTML, PDF |
-| Markdown | Word, PDF, HTML, Text, ODT |
-| HTML | Word, PDF, Markdown, Text, ODT |
-| PDF | Text |
+| From     | To                             |
+| -------- | ------------------------------ |
+| Excel    | CSV, JSON, Markdown, HTML      |
+| CSV      | Excel, JSON, Markdown, HTML    |
+| JSON     | Excel, CSV, Markdown           |
+| Word     | Text, Markdown, HTML, PDF      |
+| Markdown | Word, PDF, HTML, Text, ODT     |
+| HTML     | Word, PDF, Markdown, Text, ODT |
+| PDF      | Text                           |
 
 > When in doubt, call `get_supported_conversions` to get the full current list.
+
+PDF can only be converted to plain text. `excel` means `.xlsx`. Other formats — e.g. `.doc`, `.xls`, `.xlsb`, `.ppt`, OpenDocument, Outlook `.msg`/`.eml` or ZIP — are not inputs for `convert_document`: read them with `read_file`, or save them as one Markdown document with `convert_to_markdown` (both in the **file-management-skill**, only where available).
 
 ## Tool Usage
 
@@ -41,12 +43,12 @@ Input can be base64 `file_content`, a `librechat_file_id`, or a `document_id` (s
   "to_format": "pdf",
   "filename": "converted_document",
   "title": "My Document",
-  "author": "Alice",
-  "folder": "converted"
+  "author": "Alice"
 }
 ```
 
 Using a LibreChat file ID:
+
 ```json
 {
   "librechat_file_id": "<file_id from list_my_files>",
@@ -69,10 +71,10 @@ Returns `{id, filename, downloadUrl, markdownLink}` — always render `markdownL
 {}
 ```
 
-Returns a list of all supported `{from, to}` format pairs.
+Returns `{ conversions: [{ from, to: [...] }] }` — one entry per source format with its possible targets.
 
 ## Key Notes
 
-- `title` and `author` are only used when the output is `word` or `pdf`.
+- `title` and `author` are only used when the output is `word`, `pdf` or `odt`.
 - To get a file ID to convert, use `list_my_files` (from **file-management-skill**) to discover `librechat_file_id` or `document_id` values.
 - For reading document content without conversion, use `read_excel` / `read_word` / `read_pdf` from their respective skills.

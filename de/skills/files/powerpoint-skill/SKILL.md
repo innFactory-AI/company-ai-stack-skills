@@ -1,146 +1,215 @@
 ---
 name: powerpoint-skill
-description: 'Build and refine PowerPoint (.pptx) presentations with companyFILES MCP tools. Use when asked to create a presentation, build a deck, add or fix slides, or use a corporate slide master / Folienmaster. Covers all three build paths: from scratch (create_powerpoint), from a {{placeholder}} template (create_powerpoint_from_template), and from a corporate master WITHOUT any placeholders via its native slide layouts (describe_pptx_template, create_powerpoint_from_layouts, set_powerpoint_slide_fields). Also covers iterative editing (append_slides_to_powerpoint, update_powerpoint_slide, read_powerpoint_slides), clone-and-refill of template slides, styled tables, speaker notes, images and charts.'
+description: 'Erstellt und überarbeitet PowerPoint-Präsentationen (.pptx) mit companyFILES MCP-Tools. Verwenden, wenn eine Präsentation erstellt, ein Foliensatz aufgebaut, Folien ergänzt oder korrigiert, ein Corporate-Folienmaster verwendet oder mit einer .pptx gearbeitet werden soll, die der Nutzer im Chat angehängt hat („mach einen Foliensatz in diesem Design“, „ergänze Folien in dieser Präsentation“). Deckt alle drei Erstellungswege ab: von Grund auf (create_powerpoint), aus einer {{placeholder}}-Vorlage (create_powerpoint_from_template) und aus einem Corporate-Master OHNE Platzhalter über seine nativen Folienlayouts (describe_pptx_template, create_powerpoint_from_layouts, add_slides_from_layouts, set_powerpoint_slide_fields). Deckt außerdem iteratives Bearbeiten (append_slides_to_powerpoint, update_powerpoint_slide, read_powerpoint_slides), Klonen und Neubefüllen von Vorlagenfolien, formatierte Tabellen, Sprechernotizen, Bilder und Diagramme ab.'
 ---
 
 # PowerPoint Skill
 
-Everything needed to build, extend and repair `.pptx` decks.
+Alles, was du brauchst, um `.pptx`-Foliensätze zu erstellen, zu erweitern und zu reparieren.
 
-## Tool map
+## Tool-Übersicht
 
-| Tool                              | Purpose                                                             |
-| --------------------------------- | ------------------------------------------------------------------- |
-| `create_powerpoint`               | New deck from Markdown or a typed `slides` array (built-in design)  |
-| `create_powerpoint_from_template` | New deck from a POTX/PPTX template that contains `{{placeholders}}` |
-| `describe_pptx_template`          | Read a deck's **native slide layouts** — no `{{}}` needed           |
-| `create_powerpoint_from_layouts`  | New deck by instantiating those native layouts (corporate design)   |
-| `set_powerpoint_slide_fields`     | Patch one slide's native placeholder text, in place                 |
-| `append_slides_to_powerpoint`     | Append slides to an existing deck, in place                         |
-| `update_powerpoint_slide`         | Replace one slide of an existing deck, in place                     |
-| `read_powerpoint_slides`          | Read back slide numbers, titles and text lines                      |
-| `list_templates`                  | Find available templates (`type: "potx"`) before building           |
-| `embed_chart_in_document`         | Render a Chart.js chart into a one-slide deck                       |
+| Tool                              | Zweck                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------ |
+| `create_powerpoint`               | Neuer Foliensatz aus Markdown oder einem typisierten `slides`-Array (eigenes Design) |
+| `create_powerpoint_from_template` | Neuer Foliensatz aus einer POTX/PPTX-Vorlage mit `{{placeholders}}`                  |
+| `describe_pptx_template`          | Liest die **nativen Folienlayouts** eines Foliensatzes – kein `{{}}` nötig           |
+| `create_powerpoint_from_layouts`  | Neuer Foliensatz durch Instanziieren dieser nativen Layouts (Corporate Design)       |
+| `add_slides_from_layouts`         | Hängt layout-native Folien an einen bestehenden Foliensatz an, **direkt in der Datei** |
+| `set_powerpoint_slide_fields`     | Ändert die nativen Platzhalter einer Folie (Text + Bilder) direkt in der Datei       |
+| `append_slides_to_powerpoint`     | Hängt Folien an einen bestehenden Foliensatz an, direkt in der Datei                 |
+| `update_powerpoint_slide`         | Ersetzt eine Folie eines bestehenden Foliensatzes, direkt in der Datei               |
+| `read_powerpoint_slides`          | Liest Foliennummern, Titel, Text **sowie Layout/Slots jeder Folie**                  |
+| `list_my_files`                   | Findet einen Foliensatz, den der Nutzer im Chat angehängt hat (`file_id`)            |
+| `list_templates`                  | Findet verfügbare Vorlagen (`type: "potx"`) vor dem Erstellen                        |
+| `embed_chart_in_document`         | Chart.js-Diagramm als neuer Foliensatz; `title` fügt eine Titelfolie hinzu           |
 
 ---
 
-## 1. Work iteratively — do not one-shot a deck
+## 1. Iterativ arbeiten – keinen Foliensatz in einem Rutsch erzeugen
 
-**A deck of more than ~6 slides must be built in several tool calls.** One giant
-`create_powerpoint` call is the most common failure mode: the arguments get truncated, layout
-choices cannot be corrected, and a single bad slide means regenerating everything.
+**Ein Foliensatz mit mehr als ~6 Folien muss in mehreren Tool-Aufrufen entstehen.** Ein einziger
+riesiger `create_powerpoint`-Aufruf ist der häufigste Fehler: Die Argumente werden abgeschnitten,
+Layout-Entscheidungen lassen sich nicht korrigieren, und eine einzige fehlerhafte Folie bedeutet,
+dass alles neu generiert werden muss.
 
-The loop:
-
-```
-PLAN   → write the outline in your reply first (slide number, role/layout, headline, content sketch)
-PROBE  → describe_pptx_template / list_templates / read_powerpoint_slides — learn what exists
-SEED   → create_powerpoint* with the FIRST 3–5 slides only → keep the returned document_id
-EXTEND → append_slides_to_powerpoint in chunks of 3–5 slides, repeatedly
-REFINE → set_powerpoint_slide_fields or update_powerpoint_slide for individual fixes
-VERIFY → read_powerpoint_slides to confirm slide count, order and titles
-```
-
-### PLAN before the first tool call
-
-For anything beyond a couple of slides, show the user a plan and let them react. It costs one
-message and prevents rebuilding a 20-slide deck.
+Der Ablauf:
 
 ```
-Plan — "Digitalstrategie 2027" (12 slides, corporate master `folienmaster`)
+PLAN   → zuerst die Gliederung in deiner Antwort schreiben (Foliennummer, Rolle/Layout, Überschrift, Inhaltsskizze)
+PROBE  → describe_pptx_template / list_templates / read_powerpoint_slides – herausfinden, was vorhanden ist
+SEED   → create_powerpoint* nur mit den ERSTEN 3–5 Folien → die zurückgegebene id (document_id) merken
+EXTEND → append_slides_to_powerpoint (Weg A/B) oder add_slides_from_layouts (Weg C)
+         in Paketen von 3–5 Folien, wiederholt
+REFINE → set_powerpoint_slide_fields oder update_powerpoint_slide für einzelne Korrekturen
+VERIFY → read_powerpoint_slides, um Folienanzahl, Reihenfolge und Titel zu prüfen
+```
 
- #  Layout / role      Headline                      Content
- 1  title              Digitalisierungsstrategie 2027 Author + date
+### PLAN vor dem ersten Tool-Aufruf
+
+Zeige dem Nutzer bei allem, was über ein paar Folien hinausgeht, einen Plan und lass ihn reagieren.
+Das kostet eine Nachricht und erspart den Neuaufbau eines 20-Folien-Foliensatzes.
+
+```
+Plan — "Digitalstrategie 2027" (12 Folien, Corporate-Master `folienmaster`)
+
+ #  Layout / Rolle     Überschrift                   Inhalt
+ 1  title              Digitalisierungsstrategie 2027 Autor + Datum
  2  section            1. Ausgangslage
- 3  content            Kernbefunde                   3 bullets, 1 nested
+ 3  content            Kernbefunde                   3 Aufzählungspunkte, 1 eingerückt
  4  two-content        Handlungsoptionen             Option A | Option B
  5  section            2. Zielbild
  …
-12  closing            —                             Contact block
+12  closing            —                             Kontaktblock
 
-I'll build 1–5 first, then append 6–12 in two chunks. Say if the structure should change.
+Ich erstelle zuerst 1–5 und hänge dann 6–12 in zwei Paketen an. Sag Bescheid, wenn sich die Struktur ändern soll.
 ```
 
-### Rules of thumb
+### Faustregeln
 
-- **Chunk size 3–5 slides** per call. Long bullet text or `htmlTable` content → 2–3.
-- **Keep the `document_id`.** Every create/append/update/patch call returns the _same_
-  `document_id` for that deck. Reuse it; never build a second deck to fix the first.
-- **One bad slide → patch that slide.** `set_powerpoint_slide_fields` (layout-native) or
-  `update_powerpoint_slide` (built-in / clone mode). Both preserve slide count and position.
-- **`read_powerpoint_slides` between chunks** when you have appended several times, to confirm
-  you are numbering slides from the right base.
-- **Report progress**, e.g. "slides 1–5 done, appending 6–9 next", and render the returned
-  `markdownLink` so the user can open the intermediate state.
-- **Never re-create to append.** `drop_template_slides: false` / `append_slides_to_powerpoint`
-  exist precisely so a deck can grow across turns.
+- **Paketgröße 3–5 Folien** pro Aufruf. Bei langen Aufzählungstexten oder `htmlTable`-Inhalten → 2–3.
+- **Behalte die `document_id`.** Der erste Erstellungsaufruf gibt die `id` des Foliensatzes zurück;
+  jeder Append-/Update-/Patch-Aufruf auf diesen Foliensatz behält _dieselbe_ id. Verwende sie weiter;
+  erstelle nie einen zweiten Foliensatz, um den ersten zu reparieren.
+- **Eine fehlerhafte Folie → nur diese Folie ändern.** `set_powerpoint_slide_fields` (layout-nativ)
+  oder `update_powerpoint_slide` (eigenes Design / Klonmodus). Beide erhalten Folienanzahl und Position.
+- **`read_powerpoint_slides` zwischen den Paketen**, wenn du mehrfach angehängt hast, um sicherzugehen,
+  dass du die Folien von der richtigen Basis aus nummerierst.
+- **Melde den Fortschritt**, z. B. „Folien 1–5 fertig, als Nächstes hänge ich 6–9 an“, und gib den
+  zurückgegebenen `markdownLink` aus, damit der Nutzer den Zwischenstand öffnen kann.
+- **Nie neu erstellen, um anzuhängen.** `add_slides_from_layouts` / `append_slides_to_powerpoint`
+  gibt es genau dafür, dass ein Foliensatz über mehrere Runden wachsen kann.
 
-Every slide in a `slides` array **requires a `title`** (it is a mandatory field, including for `section` slides) — a slide without a `title` fails validation.
+Jede Folie in einem **typisierten** `slides`-Array (`create_powerpoint`, `append_slides_to_powerpoint`,
+`update_powerpoint_slide`) **benötigt einen `title`** (Pflichtfeld, auch bei `section`-Folien) – eine
+Folie ohne `title` scheitert an der Validierung. Die `slides` der Layout-Tools haben eine andere
+Struktur – `layout`, `fields`, `images`, `notes` – und kein `title`-Feld; ein Titel gehört in
+`fields.title`.
 
 ---
 
-## 2. Pick the build path
+## 2. Den Erstellungsweg wählen
 
-Decide once, at the start. Mixing paths in one deck produces inconsistent design.
+Entscheide einmal, ganz am Anfang. Werden Wege in einem Foliensatz gemischt, entsteht ein
+uneinheitliches Design.
 
-| Situation                                                   | Path                                    |
-| ----------------------------------------------------------- | --------------------------------------- |
-| No template mentioned, companyFILES design is fine          | **A** `create_powerpoint`               |
-| A template exists **and** contains `{{key}}` markup         | **B** `create_powerpoint_from_template` |
-| A corporate master / Folienmaster with **no** `{{}}` markup | **C** `create_powerpoint_from_layouts`  |
+| Situation                                                     | Weg                                     |
+| ------------------------------------------------------------- | --------------------------------------- |
+| Keine Vorlage erwähnt, companyFILES-Design passt              | **A** `create_powerpoint`               |
+| Eine Vorlage existiert **und** enthält `{{key}}`-Markup       | **B** `create_powerpoint_from_template` |
+| Ein Corporate-Master / Folienmaster **ohne** `{{}}`-Markup    | **C** `create_powerpoint_from_layouts`  |
 
-**How to tell B from C:** run `describe_pptx_template` on the template and read
+**So unterscheidest du B von C:** Führe `describe_pptx_template` auf der Vorlage aus und lies
 `hasLegacyPlaceholders`.
 
-- `true` → the deck uses `{{}}` → path **B** (see also **templates-skill**)
-- `false` → path **C**
+- `true` → der Foliensatz verwendet `{{}}` → Weg **B** (siehe auch **templates-skill**)
+- `false` → Weg **C**
 
-`list_templates` (`type: "potx"`) lists candidates and, for `{{}}` decks, a per-slide placeholder
-breakdown. It does **not** return the layout catalog — use `describe_pptx_template` for that.
+`list_templates` (`type: "potx"`) listet Kandidaten auf und liefert für `{{}}`-Foliensätze eine
+Aufschlüsselung der Platzhalter pro Folie. Den Layout-Katalog liefert es **nicht** – dafür nimmst du
+`describe_pptx_template`.
+
+Ein Foliensatz, den der Nutzer im Chat angehängt hat, muss für Weg C nicht als Vorlage hochgeladen
+werden – siehe nächster Abschnitt. Weg B ist die Ausnahme: `create_powerpoint_from_template` nimmt
+nur einen `template_name` entgegen.
 
 ---
 
-## 3. Path A — from scratch (`create_powerpoint`)
+## 2a. Der Nutzer hat eine `.pptx` im Chat angehängt
 
-### Markdown mode (fast, text-heavy decks)
+Das ist der Normalfall: Jemand legt seinen Folienmaster oder einen bestehenden Foliensatz in die
+Unterhaltung und bittet um eine Präsentation „in diesem Design“ oder darum, den gerade geschickten
+Foliensatz zu erweitern. Bei einem Corporate-Master (ohne `{{}}`) **bitte den Nutzer nicht, ihn als
+Vorlage hochzuladen** – die Layout-Tools, `read_powerpoint_slides`, `append_slides_to_powerpoint` und
+`update_powerpoint_slide` nehmen den Anhang direkt entgegen. `create_powerpoint_from_template` nicht:
+Es hat nur `template_name`, kein `document_id` / `librechat_file_id`.
 
-`#` or `##` starts a new slide. All slides get the `default` layout. A line of exactly `???`
-starts speaker notes, which run until the next `#`/`##` heading.
+```
+FIND    list_my_files → die .pptx anhand des Dateinamens wählen → ihre file_id merken
+        (list_documents / search_documents funktionieren auch – die id des Eintrags übergeben)
+PROBE   describe_pptx_template { "librechat_file_id": "<file_id>" }
+        → hasLegacyPlaceholders entscheidet den Weg (B oder C)
+        read_powerpoint_slides { "librechat_file_id": "<file_id>" }, wenn der Foliensatz Inhalte hat,
+        die du sehen oder erweitern musst – es meldet Layout und Slot-Keys jeder Folie
+BUILD   (Weg C)
+        neuer Foliensatz → create_powerpoint_from_layouts { "librechat_file_id": ..., "slides": [...] }
+        erweitern        → add_slides_from_layouts     { "librechat_file_id": ..., "slides": [...] }
+        eine korrigieren → set_powerpoint_slide_fields { "librechat_file_id": ..., "slide_number": n, ... }
+```
 
-> **`title` adds a slide.** Passing the top-level `title` argument to `create_powerpoint`
-> prepends a generated dark title slide (title, author, today's date). So `n` content slides plus
-> `title` = `n + 1` slides, and every later `slide_number` shifts by one. Omit `title` when you
-> want to author the opening slide yourself. `append_slides_to_powerpoint` never adds one.
+**Ein angehängter `{{}}`-Foliensatz (Weg B)** hat zwei Wege:
+
+- Um ihn mit `create_powerpoint_from_template` zu befüllen (Bilder, Diagramme, `repeat`), muss er
+  zuerst als Vorlage hochgeladen werden (Web-UI, `open_companyfiles_ui page="upload"`); danach rufst du
+  das Tool mit diesem `template_name` auf.
+- Oder du bearbeitest den Anhang selbst im Klonmodus (§5): `update_powerpoint_slide` mit
+  `reference_slide` gleich `slide_number` plus `placeholders` befüllt eine Folie direkt in der Datei;
+  `append_slides_to_powerpoint` mit `reference_slide` plus `placeholders` fügt eine befüllte Kopie hinzu.
+
+**`librechat_file_id` und `document_id` sind austauschbare Eingaben.** Der Server löst beide auf,
+zuerst über das PVC. Übergib die id, die dir die Auflistung geliefert hat.
+
+**Neuer Foliensatz oder bearbeiteter Foliensatz?** Zwei verschiedene Absichten, zwei verschiedene Tools:
+
+| Der Nutzer möchte                                         | Tool                             | Ergebnis                                                 |
+| --------------------------------------------------------- | -------------------------------- | -------------------------------------------------------- |
+| Eine Präsentation **im Design** dieses Foliensatzes       | `create_powerpoint_from_layouts` | Ein **neues** Dokument; der Anhang bleibt unverändert    |
+| Weitere Folien **in** diesem Foliensatz                   | `add_slides_from_layouts`        | **Derselbe** Foliensatz, direkt in der Datei erweitert   |
+| Eine Folie dieses Foliensatzes geändert                   | `set_powerpoint_slide_fields`    | **Derselbe** Foliensatz, eine Folie geändert             |
+
+Bei einem Anhang bedeutet „direkt in der Datei“: Die Datei wird auf dem gemeinsamen LibreChat-Volume
+überschrieben, wenn dieses Volume eingebunden ist (gleiche `file_id`); andernfalls wird die geänderte
+Kopie als neues companyFILES-Dokument gespeichert. Die `message` in der Antwort sagt, was passiert
+ist – gib das weiter, statt dem Nutzer zu versprechen, dass seine Originaldatei geändert wurde.
+
+**Ein aus Markdown erstellter Foliensatz hat keine befüllbaren Layouts.** `add_slides_from_layouts`
+lehnt ihn ab und nennt stattdessen `append_slides_to_powerpoint`; diese Ablehnung ist korrekt, umgehe
+sie nicht.
+
+---
+
+## 3. Weg A – von Grund auf (`create_powerpoint`)
+
+### Markdown-Modus (schnell, textlastige Foliensätze)
+
+`#` oder `##` beginnt eine neue Folie. Alle Folien erhalten das Layout `default`. Eine Zeile, die
+genau `???` enthält, beginnt Sprechernotizen, die bis zur nächsten `#`/`##`-Überschrift reichen.
+
+> **`title` fügt eine Folie hinzu.** Das Top-Level-Argument `title` von `create_powerpoint` stellt
+> eine generierte dunkle Titelfolie (Titel, Autor, heutiges Datum) voran. `n` Inhaltsfolien plus
+> `title` ergeben also `n + 1` Folien, und jede spätere `slide_number` verschiebt sich um eins. Lass
+> `title` weg, wenn du die Eröffnungsfolie selbst gestalten willst. `append_slides_to_powerpoint`
+> fügt nie eine hinzu.
 
 ```json
 {
   "markdown": "# Quarterly Results\n\n- Revenue: €1.2M\n- Growth: 15%\n\n???\nOpen with the revenue number.\n\n## Key Highlights\n\n- Launched new product\n- Expanded to 3 markets",
   "filename": "q4_results",
   "title": "Q4 2025 Results",
-  "author": "Strategy Team",
-  "folder": "presentations"
+  "author": "Strategy Team"
 }
 ```
 
-Inline images use `doc:<documentId>` or `lc:<file_id>`:
+Inline-Bilder im Markdown von `create_powerpoint` verwenden `doc:<documentId>` oder `lc:<file_id>`:
 
 ```markdown
 ![Chart](doc:abc12345-...)
 ![Attachment](lc:xyz-librechat-file-id)
 ```
 
-### Typed slides mode (layout control)
+### Modus mit typisierten Folien (Layout-Kontrolle)
 
-Pass `slides` instead of `markdown`. When both are given, `slides` wins.
+Übergib `slides` statt `markdown`. Sind beide angegeben, gewinnt `slides`.
 
-| `type`         | Visual                                                 | Fields                                                               |
-| -------------- | ------------------------------------------------------ | -------------------------------------------------------------------- |
-| `"default"`    | Accent bar + title + stacked content                   | `title`, `content`, `bullets`, `code`, `table`, `htmlTable`, `image` |
-| `"section"`    | Dark background, large centred title — chapter divider | `title`, `subtitle`                                                  |
-| `"text-image"` | Title on top, text/bullets left, image right           | `title`, `content`, `bullets`, `htmlTable`, `image`, `imageAlt`      |
+| `type`         | Darstellung                                                  | Felder                                                               |
+| -------------- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `"default"`    | Akzentbalken + Titel + gestapelter Inhalt                    | `title`, `content`, `bullets`, `code`, `table`, `htmlTable`, `image` |
+| `"section"`    | Dunkler Hintergrund, großer zentrierter Titel – Kapiteltrenner | `title`, `subtitle`                                                |
+| `"text-image"` | Titel oben, Text/Aufzählung links, Bild rechts               | `title`, `content`, `bullets`, `htmlTable`, `image`, `imageAlt`      |
 
-Every type also accepts `notes` (speaker notes). Unknown `type` values fall back to `"default"`.
-Omitting `image` on a `text-image` slide draws a skeleton placeholder box — useful for drafts.
+Jeder Typ akzeptiert zusätzlich `notes` (Sprechernotizen). Unbekannte `type`-Werte fallen auf
+`"default"` zurück. Fehlt `image` auf einer `text-image`-Folie, wird ein Skelett-Platzhalterkasten
+gezeichnet – nützlich für Entwürfe.
 
 ```json
 {
@@ -156,32 +225,33 @@ Omitting `image` on a `text-image` slide draws a skeleton placeholder box — us
       "type": "text-image",
       "title": "System Architecture",
       "bullets": ["Microservices", "Auto-scaling", "99.9% uptime"],
-      "image": "lc:xyz-file-id",
+      "image": "https://www.example.com/architecture.png",
       "imageAlt": "Architecture diagram"
     }
   ],
   "title": "Q4 2025 Results",
-  "filename": "q4_results",
-  "folder": "presentations"
+  "filename": "q4_results"
 }
 ```
 
-`bullets` is a flat `string[]` here — for nested bullets use path C (`level`) or a template.
+`bullets` ist hier ein flaches `string[]` – für eingerückte Aufzählungen nutzt du Weg C (`level`)
+oder eine Vorlage. Das Feld `image` nimmt eine base64-Data-URI oder eine öffentliche http(s)-URL –
+nicht `doc:`/`lc:` (siehe §6).
 
-### Styled tables — `htmlTable`
+### Formatierte Tabellen – `htmlTable`
 
-Use `htmlTable` instead of `table` when cells need colour, bold or alignment. Supported on
-`default` and `text-image`; it takes precedence over `table`.
+Verwende `htmlTable` statt `table`, wenn Zellen Farbe, Fettdruck oder Ausrichtung brauchen.
+Unterstützt auf `default` und `text-image`; hat Vorrang vor `table`.
 
-| Inline CSS                        | Effect      |
-| --------------------------------- | ----------- |
-| `background-color: #hex`          | Cell fill   |
-| `color: #hex`                     | Text colour |
-| `font-weight: bold`               | Bold        |
-| `font-style: italic`              | Italic      |
-| `text-align: left\|center\|right` | Alignment   |
+| Inline-CSS                        | Wirkung       |
+| --------------------------------- | ------------- |
+| `background-color: #hex`          | Zellfüllung   |
+| `color: #hex`                     | Textfarbe     |
+| `font-weight: bold`               | Fett          |
+| `font-style: italic`              | Kursiv        |
+| `text-align: left\|center\|right` | Ausrichtung   |
 
-`<th>` cells get the theme's header fill/text automatically unless overridden.
+`<th>`-Zellen erhalten automatisch Kopfzeilenfüllung/-text des Themes, sofern nicht überschrieben.
 
 ```json
 {
@@ -191,27 +261,28 @@ Use `htmlTable` instead of `table` when cells need colour, bold or alignment. Su
 }
 ```
 
-For a plain grid, `table: string[][]` (first row = header) is enough.
+Für ein einfaches Raster reicht `table: string[][]` (erste Zeile = Kopfzeile).
 
 ---
 
-## 4. Path C — corporate master without `{{}}` (layout-native)
+## 4. Weg C – Corporate-Master ohne `{{}}` (layout-nativ)
 
-This is the path for a deck the design team shipped: `Folienmaster_LMU.pptx` and friends. Such
-decks carry **no `{{}}` markup**, only named slide layouts with OOXML's own placeholders.
-Content is bound to those placeholders and **no formatting is written**, so fonts, colours,
-logos and geometry come from the master. ("Reset layout" in PowerPoint changes nothing — that is
-the proof.)
+Das ist der Weg für einen Foliensatz, den das Design-Team geliefert hat, z. B. eine
+`Corporate-Master.pptx`. Solche Foliensätze enthalten **kein `{{}}`-Markup**, sondern nur benannte
+Folienlayouts mit den eigenen Platzhaltern von OOXML. Inhalte werden an diese Platzhalter gebunden
+und es wird **keine Formatierung geschrieben**, sodass Schriften, Farben, Logos und Geometrie aus dem
+Master stammen. („Folie zurücksetzen“ in PowerPoint ändert nichts – das ist der Beweis.)
 
-Upload such a master as a template with `type: potx` (also correct for a `.pptx` file).
+Lade einen solchen Master als Vorlage hoch (eine `.pptx` wird als Typ `potx` gespeichert) – oder,
+wenn der Nutzer ihn im Chat angehängt hat, verwende direkt seine `librechat_file_id` (Abschnitt 2a).
 
-### Step 1 — `describe_pptx_template`
+### Schritt 1 – `describe_pptx_template`
 
 ```json
 { "template_name": "folienmaster" }
 ```
 
-Returns:
+Liefert:
 
 ```json
 {
@@ -227,7 +298,8 @@ Returns:
       "exampleSlides": [4],
       "slots": [
         { "key": "title", "type": "title" },
-        { "key": "body:10", "type": "body", "hint": "Mastertextformat bearbeiten" }
+        { "key": "body:10", "type": "body", "hint": "Mastertextformat bearbeiten" },
+        { "key": "pic:14", "type": "pic", "isImage": true, "aspectRatio": 1.78 }
       ]
     },
     {
@@ -241,29 +313,30 @@ Returns:
 }
 ```
 
-Reading it:
+So liest du das:
 
-- **`layoutId` is the stable identifier.** Layout **names repeat** across slide masters
-  (a real deck had `Präsentationstitel` 3× across 5 masters). Prefer `layoutId`.
-- **Slot keys are `type` or `type:idx`.** The `idx` matters: `body:12` + `body:13` on the same
-  layout means a two-column layout — fill both to use both columns.
-- **`role`** is inferred from the layout name (German + English keywords) and its slot
-  composition. Roles: `title`, `title-image`, `section`, `content`, `two-content`,
-  `title-only`, `closing`, `reference`. `roleMap` picks one layout per role.
-- **`hint`** is the layout's own prompt text and is only a hint — real masters often say
-  "Mastertextformat bearbeiten" or lorem ipsum. Judge by name + slot shape, not by hint.
-- **`isImage` slots (`pic:*`) cannot be filled yet.** They stay empty and are reported back as
-  `imageSlotsNotFilled`. Do not promise the user an image in such a slot.
+- **`layoutId` ist der stabile Bezeichner.** Layout-**Namen wiederholen sich** über Folienmaster
+  hinweg (ein echter Foliensatz hatte `Präsentationstitel` 3× verteilt auf 5 Master). Bevorzuge `layoutId`.
+- **Slot-Keys lauten `type` oder `type:idx`.** Der `idx` zählt: `body:12` + `body:13` im selben
+  Layout bedeutet ein zweispaltiges Layout – befülle beide, um beide Spalten zu nutzen.
+- **`role`** wird aus dem Layoutnamen (deutsche + englische Schlüsselwörter) und der Zusammensetzung
+  seiner Slots abgeleitet. Rollen: `title`, `title-image`, `section`, `content`, `two-content`,
+  `title-only`, `closing`, `reference`. `roleMap` wählt pro Rolle ein Layout.
+- **`hint`** ist der eigene Aufforderungstext des Layouts und nur ein Hinweis – echte Master sagen oft
+  „Mastertextformat bearbeiten“ oder Lorem ipsum. Urteile nach Name + Slot-Struktur, nicht nach dem Hinweis.
+- **`isImage`-Slots (`pic:*`) erhalten ein Bild über das separate Argument `images`**, nicht über
+  `fields`. `aspectRatio` (Breite ÷ Höhe des Slot-Rahmens) zeigt dir, was sich gut zuschneiden lässt –
+  das Bild wird mittig auf dieses Verhältnis zugeschnitten, nie verzerrt. Ein Slot, für den du kein
+  Bild übergibst, bleibt leer und erscheint in `imageSlotsNotFilled`; versprich dem Nutzer dann kein Bild.
 
-### Step 2 — `create_powerpoint_from_layouts`
+### Schritt 2 – `create_powerpoint_from_layouts`
 
-Each slide picks its layout by `layoutId`, layout name, or role — mix freely.
+Jede Folie wählt ihr Layout über `layoutId`, Layoutnamen oder Rolle – frei kombinierbar.
 
 ```json
 {
   "template_name": "folienmaster",
   "filename": "strategie-2027",
-  "folder": "presentations",
   "slides": [
     {
       "layout": "title",
@@ -290,70 +363,115 @@ Each slide picks its layout by `layoutId`, layout name, or role — mix freely.
         "body:13": ["Option B: Schnittstellen", "Aufwand: mittel"]
       }
     },
-    { "layout": "closing", "fields": { "body:11": "Institut XY\n80539 München" } }
+    { "layout": "closing", "fields": { "body:11": "Muster GmbH\n12345 Musterstadt" } }
   ]
 }
 ```
 
-**Slot values** accept three shapes:
+**Bilder** gehören in ein `images`-Objekt pro Folie, mit Keys wie bei `fields` (exakter Slot-Key, der
+bloße Typ `pic` oder die Synonyme `image`/`picture`/`photo`). Als Quellen dienen die üblichen drei:
 
-| Value                             | Result                                           |
-| --------------------------------- | ------------------------------------------------ |
-| `"one line"`                      | One paragraph; `\n` splits into paragraphs       |
-| `["a", "b"]`                      | One bullet per item, all at level 0              |
-| `[{ "text": "sub", "level": 1 }]` | Nested bullet, `level` 0–8, styled by the master |
+```json
+{
+  "layout": "title-image",
+  "fields": { "title": "Standort München" },
+  "images": { "pic:14": { "librechat_file_id": "abc-attachment-id" } }
+}
+```
 
-Omitted slots stay empty and show the layout prompt in PowerPoint.
+`{ "document_id": "..." }` (ein PVC-Upload) und `{ "base64": "..." }` funktionieren genauso. Das Bild
+übernimmt Position und Größe aus dem Layout und wird auf das Seitenverhältnis des Slots zugeschnitten.
 
-**Base deck options:**
+**Slot-Werte** akzeptieren drei Formen:
 
-- `drop_template_slides` (default `true`) removes the source deck's own slides. Slide masters,
-  layouts, themes and media are **always** kept.
-- `drop_template_slides: false` **appends** the new slides after the existing ones.
-- Instead of `template_name`, pass `document_id` (a stored `.pptx`) or `librechat_file_id` (an
-  attachment) to use that deck as the base. Because layouts survive, a deck built this way can be
-  appended to again — that is the iterative path for path C.
-- `role_map` overrides inference: `{ "content": "slideLayout4.xml" }`.
+| Wert                              | Ergebnis                                                   |
+| --------------------------------- | ---------------------------------------------------------- |
+| `"one line"`                      | Ein Absatz; `\n` teilt in mehrere Absätze                  |
+| `["a", "b"]`                      | Ein Aufzählungspunkt pro Element, alle auf Ebene 0         |
+| `[{ "text": "sub", "level": 1 }]` | Eingerückter Aufzählungspunkt, `level` 0–8, vom Master gestaltet |
 
-**Response** reports per slide: `layoutId`, `layoutName`, `filledSlots`, `unknownFields`,
-`emptySlots`. Always check `unknownFields` — a typo'd slot key is reported, not silently dropped.
+Weggelassene Slots bleiben leer und zeigen in PowerPoint den Aufforderungstext des Layouts.
 
-### Step 3 — `set_powerpoint_slide_fields` (iterative editing)
+**Optionen für den Basis-Foliensatz:**
 
-Patches **one** slide in place. Only the slots you pass change; every other slot, shape, image
-and the slide's position stay untouched. Slots the layout offers but the slide does not yet carry
-are added.
+- `drop_template_slides` (Standard `true`) entfernt die eigenen Folien des Quell-Foliensatzes.
+  Folienmaster, Layouts, Themes und Medien bleiben **immer** erhalten.
+- `drop_template_slides: false` behält sie und hängt danach an – das Ergebnis wird jedoch als **neues**
+  Dokument gespeichert. Um einen Foliensatz direkt in der Datei wachsen zu lassen, verwende
+  `add_slides_from_layouts` (Schritt 3).
+- Statt `template_name` kannst du `document_id` (eine gespeicherte `.pptx`) oder `librechat_file_id`
+  (einen Anhang) übergeben, um diesen Foliensatz als Basis zu verwenden. Da die Layouts erhalten
+  bleiben, lässt sich ein so erstellter Foliensatz später erweitern – das ist der iterative Weg für Weg C.
+- `role_map` überschreibt die Ableitung: `{ "content": "slideLayout4.xml" }`.
+
+Die **Antwort** meldet pro Folie: `layoutId`, `layoutName`, `filledSlots`, `filledImageSlots`,
+`unknownFields`, `emptySlots`. Prüfe immer `unknownFields` – ein vertippter Slot-Key wird gemeldet,
+nicht stillschweigend verworfen. Bild-Slots, die kein Bild erhalten haben, stehen in
+`imageSlotsNotFilled` (mit einer `note`).
+
+### Schritt 3 – `add_slides_from_layouts` (Foliensatz direkt in der Datei erweitern)
+
+Das In-place-Gegenstück zu Schritt 2: dasselbe `slides`-Array, aber es zielt über `document_id` /
+`librechat_file_id` auf einen bestehenden Foliensatz und **behält dasselbe Dokument**. So wächst ein
+Weg-C-Foliensatz über mehrere Runden – erstelle den Foliensatz nie neu, um Folien hinzuzufügen.
+
+```json
+{
+  "document_id": "<id>",
+  "slides": [
+    { "layout": "Kapiteltrenner", "fields": { "title": "2. Zielbild" } },
+    { "layout": "slideLayout11.xml", "fields": { "title": "Roadmap", "body:10": ["Q1", "Q2"] } }
+  ]
+}
+```
+
+- `insert_after: n` setzt die neuen Folien hinter Folie `n` (`0` = vor Folie 1). Weglassen, um anzuhängen.
+- Liefert `slides_before` / `slides_after` / `slides_added` plus denselben Bericht pro Folie.
+- Lehnt einen Foliensatz ab, dessen Layouts keine nativen Platzhalter haben (einen aus Markdown
+  erstellten Foliensatz), und nennt stattdessen `append_slides_to_powerpoint` – in diesem Fall wird
+  nichts geschrieben. Ebenfalls ohne zu schreiben lehnt es ab, wenn überhaupt kein Slot befüllt wird
+  (typischerweise: keiner der übergebenen Keys passt zu einem Slot).
+
+### Schritt 4 – `set_powerpoint_slide_fields` (eine Folie ändern)
+
+Ändert **eine** Folie direkt in der Datei. Nur die übergebenen Slots ändern sich; alle anderen Slots,
+Formen, Bilder und die Position der Folie bleiben unberührt. Slots, die das Layout anbietet, die Folie
+aber noch nicht enthält, werden hinzugefügt – auch Bild-Slots.
 
 ```json
 {
   "document_id": "<id>",
   "slide_number": 3,
-  "fields": { "title": "Kernbefunde (überarbeitet)", "body:10": ["Neuer Punkt 1", "Neuer Punkt 2"] }
+  "fields": { "title": "Kernbefunde (überarbeitet)", "body:10": ["Neuer Punkt 1", "Neuer Punkt 2"] },
+  "images": { "pic:14": { "librechat_file_id": "abc-attachment-id" } }
 }
 ```
 
-This is the tool to call repeatedly across turns while the user reviews the deck. Accepts
-`librechat_file_id` too (the attachment is updated on the shared volume when available).
+`fields` oder `images` allein genügt – übergib beides nur, wenn du beides ändern willst. Das ist das
+Tool, das du über mehrere Runden immer wieder aufrufst, während der Nutzer den Foliensatz prüft.
+Akzeptiert auch `librechat_file_id` (der Anhang wird auf dem gemeinsamen Volume aktualisiert, sofern
+verfügbar).
 
-### `slide_type` routing still works
+### Wie eine `layout`-Referenz aufgelöst wird
 
-A role resolves in this order: a `{{slide_type:x}}` marker found in a deck slide (unchanged
-legacy behaviour, highest priority) → an explicit `role_map` → roles inferred from native
-layouts. **Never ask the user to type `{{}}` markers into a corporate master** — that is exactly
-what path C removes.
+Das `layout` einer Folie wird in dieser Reihenfolge abgeglichen: eine `layoutId` → eine Rolle (ein
+expliziter `role_map`-Eintrag überschreibt die abgeleitete `roleMap`) → ein Layoutname.
+`{{slide_type:x}}`-Marker spielen hier keine Rolle; sie steuern nur `repeat`-Datensätze in
+`create_powerpoint_from_template` (siehe **templates-skill**). **Bitte den Nutzer nie, `{{}}`-Marker
+in einen Corporate-Master einzutippen** – genau das macht Weg C überflüssig.
 
 ---
 
-## 5. Iterative editing of any deck
+## 5. Iteratives Bearbeiten beliebiger Foliensätze
 
-All three tools below target the deck with `document_id` **or** `librechat_file_id` (a LibreChat
-attachment, updated in place on the shared volume when it is mounted).
+Alle drei folgenden Tools adressieren den Foliensatz über `document_id` **oder** `librechat_file_id`
+(ein LibreChat-Anhang, der direkt auf dem gemeinsamen Volume aktualisiert wird, wenn es eingebunden ist).
 
 ### `append_slides_to_powerpoint`
 
-Two mutually exclusive modes.
+Zwei sich gegenseitig ausschließende Modi.
 
-**(1) Generate** — `markdown` or `slides`, same schema as `create_powerpoint`:
+**(1) Generieren** – `markdown` oder `slides`, dasselbe Schema wie bei `create_powerpoint`:
 
 ```json
 {
@@ -365,9 +483,9 @@ Two mutually exclusive modes.
 }
 ```
 
-**(2) Clone-and-refill** — `reference_slide` copies an **existing slide of this same deck**
-(its design, layout, fonts, background) and refills its `{{placeholders}}`. This is how a
-`{{}}`-template deck is extended so the new slide looks identical to the template:
+**(2) Klonen und neu befüllen** – `reference_slide` kopiert eine **bestehende Folie desselben
+Foliensatzes** (Design, Layout, Schriften, Hintergrund) und befüllt ihre `{{placeholders}}` neu. So
+wird ein `{{}}`-Vorlagen-Foliensatz erweitert, damit die neue Folie genau wie die Vorlage aussieht:
 
 ```json
 {
@@ -378,19 +496,19 @@ Two mutually exclusive modes.
 }
 ```
 
-`reference_slide` cannot be combined with `markdown`/`slides`. In clone mode use the top-level
-`notes` field; in generate mode use `slides[].notes`.
+`reference_slide` lässt sich nicht mit `markdown`/`slides` kombinieren. Im Klonmodus verwendest du
+das Top-Level-Feld `notes`, im Generierungsmodus `slides[].notes`.
 
-Clone-mode limits:
+Einschränkungen des Klonmodus:
 
-- Structured fields (`bullets`, `code`, `table`) are **not** rendered — the cloned slide only has
-  the shapes the template defines. Feed content in through `{{placeholders}}`.
-- Only `{{text placeholders}}` are refilled; image (`{%name}`) refill is not supported here — use
-  `create_powerpoint_from_template` for that.
+- Strukturierte Felder (`bullets`, `code`, `table`) werden **nicht** gerendert – die geklonte Folie
+  hat nur die Formen, die die Vorlage definiert. Inhalte fließen über `{{placeholders}}` ein.
+- Nur `{{text placeholders}}` werden neu befüllt; das Neubefüllen von Bildern (`{%name}`) wird hier
+  nicht unterstützt – dafür nimmst du `create_powerpoint_from_template`.
 
 ### `update_powerpoint_slide`
 
-Replaces one slide, keeping its position and the total slide count. Same two modes:
+Ersetzt eine Folie und behält ihre Position sowie die Gesamtzahl der Folien. Dieselben zwei Modi:
 
 ```json
 {
@@ -404,11 +522,11 @@ Replaces one slide, keeping its position and the total slide count. Same two mod
 { "document_id": "<id>", "slide_number": 3, "reference_slide": 4, "placeholders": { "region": "EMEA" } }
 ```
 
-Or quick text-only: `{ "document_id": "<id>", "slide_number": 2, "markdown": "## New Title\n\n- Bullet" }`
-(`##` sets the title, `???` adds notes).
+Oder schnell nur Text: `{ "document_id": "<id>", "slide_number": 2, "markdown": "## New Title\n\n- Bullet" }`
+(`##` setzt den Titel, `???` fügt Notizen hinzu).
 
-When `reference_slide` equals `slide_number`, the slide is refilled in place — the way to fix a
-slide that still shows raw `{{placeholders}}`.
+Ist `reference_slide` gleich `slide_number`, wird die Folie direkt neu befüllt – so reparierst du eine
+Folie, die noch rohe `{{placeholders}}` zeigt.
 
 ### `read_powerpoint_slides`
 
@@ -416,108 +534,174 @@ slide that still shows raw `{{placeholders}}`.
 { "document_id": "<id>" }
 ```
 
-Returns `{ slide_count, slides: [{ slideNumber, title, textLines }] }`. Use it before editing a
-deck you did not just build, and after several appends to confirm numbering.
+Liefert `{ slide_count, hasLegacyPlaceholders, layoutsAvailable, slides: [...] }`, jede Folie mit
+`{ slideNumber, title, textLines, layoutId, layoutName, role, slots, emptySlots }`. Verwende es, bevor
+du einen Foliensatz bearbeitest, den du nicht gerade selbst erstellt hast, und nach mehreren
+Anhängevorgängen, um die Nummerierung zu prüfen.
+
+`slideNumber` ist die Position, **die PowerPoint anzeigt** (Reihenfolge in `sldIdLst`), keine interne
+Dateinummer – es ist also die Nummer, die du an `set_powerpoint_slide_fields` /
+`update_powerpoint_slide` übergibst, auch bei einem Foliensatz, dessen Folien umsortiert wurden, bevor
+er bei uns ankam.
+
+Die Layout-Felder machen einen unbekannten Foliensatz bearbeitbar: `layoutId` speist
+`add_slides_from_layouts`, `slots` zeigt, was jede Folie aktuell enthält, und `emptySlots` listet die
+noch freien Keys. Übergib `include_layouts: false` für ein reines Textlesen eines sehr großen
+Foliensatzes (nur `slideNumber`, `title`, `textLines`).
 
 ---
 
-## 6. Charts and images in slides
+## 6. Diagramme und Bilder in Folien
 
-- **Chart as its own slide:** `embed_chart_in_document` with `document_type: "powerpoint"` renders
-  the chart onto its own slide (plus a generated title slide when `title` is given). Use the
-  resulting `document_id` as an image source, or keep appending to it.
-- **Chart on a content slide:** create the chart image, then reference it via `image` on a
-  `text-image` slide (`doc:<id>`), or via a `{%name}` image placeholder in a `{{}}` template.
-- **Image sources everywhere:** an https URL, a base64 data URI, `doc:<documentId>` (PVC upload)
-  or `lc:<file_id>` (LibreChat attachment — see `list_my_files`).
-- See **charts-diagrams-skill** for chart/diagram creation, **templates-skill** for `{%image}`
-  placeholders, chart data replacement and `repeat`.
-
----
-
-## 7. Gotchas
-
-- **Never fall back to path A when a corporate master was requested.** If a layout call is
-  rejected, fix the call — do not switch to `create_powerpoint`. Its output uses the built-in
-  design, so the one thing that was asked for (the corporate master) is exactly what is lost, and
-  a deck named after the master that does not use it reads as success when it is a failure. If you
-  cannot get the call through, say so and stop; do not ship a substitute silently.
-- **Pass `slides`, `fields` and `role_map` as real JSON, not as a string.** A serialised
-  `"[{\"layout\":…}]"` is tolerated by the server, but only as a safety net — send structured
-  arguments. A schema rejection means the _shape_ is wrong: re-read this file's example rather than
-  retrying the same payload.
-- **`slides` beats `markdown`** when both are passed to the same call.
-- **`title` on `create_powerpoint` prepends an extra generated title slide** — it shifts every
-  `slide_number`. Omit it to author slide 1 yourself.
-- **`reference_slide` + `markdown`/`slides` is an error.** Pick one mode.
-- **`slide_number` is 1-based**; out of range is an error that reports the real slide count.
-- **`unknownFields` / `emptySlots`** in a layout response are the signal that a slot key was
-  wrong — re-read `describe_pptx_template` rather than guessing. Common synonyms are accepted
-  (`title` for a `ctrTitle` placeholder, `subtitle` for `subTitle`, `content`/`bullets` for
-  `body`), but exact slot keys are always safest.
-- **A synonym fills one slot, not all matching ones.** On a layout with two body placeholders
-  (`body:12`, `body:13`) a single `bullets` fills the **first free** one and reports the other in
-  `emptySlots` — it is not duplicated into both. To fill both columns, address them by exact key.
-  Exact keys win over synonyms, so `{ "body:13": "right", "content": "left" }` fills both correctly.
-- **`subtitle` on a master with no `subTitle` placeholder** (Folienmaster_LMU and similar: the
-  subtitle line of a title layout is a plain `body` placeholder) falls back to the first free
-  `body` slot instead of landing in `unknownFields`.
-- **`create_powerpoint_from_template` refuses a template with no `{{}}` placeholders** and names
-  the layout tools in the error. That is path C's cue, not a broken template — do not retry the
-  legacy tool and do not add `{{}}` markers to a corporate master.
-- **`pic:*` slots are not fillable** in path C yet.
-- **Layout names are not unique.** Ambiguous name references resolve to the first match and log a
-  warning; use `layoutId`.
-- **`list_templates` does not include the layout catalog.** `describe_pptx_template` does.
-- **Do not write formatting in path C.** Passing colours/fonts is neither possible nor wanted —
-  the master owns the design.
-- **Downloads:** every create/append/update/patch call returns
-  `{ id, filename, downloadUrl, markdownLink }`. Always render `markdownLink` in the reply. In
-  embedded (iframe) mode downloads are sandboxed — offer "copy link" instead.
-- **Theming (path A/B):** the org/user colour theme and logo are applied automatically from
-  settings; no theme arguments needed.
+- **Diagramm als eigene Folie:** `embed_chart_in_document` mit `document_type: "powerpoint"` rendert
+  das Diagramm auf eine eigene Folie; ist `title` gesetzt, kommt zuerst eine generierte Titelfolie,
+  sodass der Foliensatz **zwei** Folien hat. Das Ergebnis ist ein Foliensatz – hänge mit
+  `append_slides_to_powerpoint` weiter daran an. Seine `id` ist eine `.pptx`, **kein Bild**: Als
+  `doc:<id>` oder als Bild-`document_id` übergeben, wird sie als „not an image“ abgelehnt.
+- **Diagramm auf einer Inhaltsfolie:** Nimm ein gespeichertes Diagrammbild (z. B. ein hochgeladenes
+  PNG – seine Dokument-id) und referenziere es als `![chart](doc:<id>)` im Markdown von
+  `create_powerpoint`, über einen `{%name}`-Bildplatzhalter in einer `{{}}`-Vorlage oder über einen
+  Layout-Bild-Slot (`images`, Weg C).
+- **Bildquellen** unterscheiden sich je nach Tool:
+  - Markdown in `create_powerpoint`: `doc:<documentId>` (gespeichertes Bild), `lc:<file_id>`
+    (LibreChat-Anhang – siehe `list_my_files`), eine base64-Data-URI oder eine öffentliche http(s)-URL.
+  - `image`-Felder in `slides[]` sowie Markdown in `append_slides_to_powerpoint` /
+    `update_powerpoint_slide`: nur eine base64-Data-URI (`data:image/…`) oder eine öffentliche
+    http(s)-URL. Eine `doc:`/`lc:`-Referenz wird dort nicht aufgelöst – die Folie zeigt stattdessen
+    einen Text `[Image: …]`.
+  - http(s)-Bilder müssen von einem **öffentlich erreichbaren** Host stammen; interne oder private
+    Adressen werden abgelehnt.
+  - `{%name}`-Vorlagenbilder und Layout-Bild-Slots (`images`) nehmen
+    `{ base64 | document_id | librechat_file_id }`.
+- Siehe **charts-diagrams-skill** für das Erstellen von Diagrammen, **templates-skill** für
+  `{%image}`-Platzhalter, `charts` (benennt nur Datenreihen um – die Diagrammdaten der Vorlage bleiben)
+  und `repeat`.
 
 ---
 
-## 8. End-to-end test drive
+## 7. Stolperfallen
 
-A single run that exercises every slide feature. Useful for verifying a deployment.
+- **Weiche nie auf Weg A aus, wenn ein Corporate-Master gewünscht war.** Wird ein Layout-Aufruf
+  abgelehnt, korrigiere den Aufruf – wechsle nicht zu `create_powerpoint`. Dessen Ausgabe nutzt das
+  eigene Design, sodass genau das verloren geht, worum gebeten wurde (der Corporate-Master), und ein
+  nach dem Master benannter Foliensatz, der ihn nicht verwendet, wirkt wie ein Erfolg, obwohl er ein
+  Fehlschlag ist. Bekommst du den Aufruf nicht durch, sag das und hör auf; liefere nicht
+  stillschweigend einen Ersatz.
+- **Übergib `slides`, `fields` und `role_map` als echtes JSON, nicht als String.** Ein serialisiertes
+  `"[{\"layout\":…}]"` toleriert der Server, aber nur als Sicherheitsnetz – sende strukturierte
+  Argumente. Eine Schema-Ablehnung bedeutet, dass die _Struktur_ falsch ist: Lies das Beispiel in
+  dieser Datei erneut, statt dieselbe Nutzlast noch einmal zu senden.
+- **`slides` schlägt `markdown`**, wenn beide im selben Aufruf übergeben werden.
+- **`title` bei `create_powerpoint` stellt eine zusätzliche generierte Titelfolie voran** – das
+  verschiebt jede `slide_number`. Lass es weg, um Folie 1 selbst zu gestalten.
+- **`reference_slide` + `markdown`/`slides` ist ein Fehler.** Wähle einen Modus.
+- **`slide_number` beginnt bei 1**; ein Wert außerhalb des Bereichs ist ein Fehler, der die
+  tatsächliche Folienanzahl meldet.
+- **`unknownFields` / `emptySlots`** in einer Layout-Antwort signalisieren, dass ein Slot-Key falsch
+  war – lies `describe_pptx_template` erneut, statt zu raten. Gängige Synonyme werden akzeptiert
+  (`title` für einen `ctrTitle`-Platzhalter, `subtitle` für `subTitle`, `content`/`bullets` für
+  `body`), exakte Slot-Keys sind aber immer am sichersten.
+- **Ein Synonym befüllt einen Slot, nicht alle passenden.** Bei einem Layout mit zwei
+  Body-Platzhaltern (`body:12`, `body:13`) befüllt ein einzelnes `bullets` den **ersten freien** und
+  meldet den anderen in `emptySlots` – es wird nicht in beide dupliziert. Um beide Spalten zu befüllen,
+  adressiere sie mit exaktem Key. Exakte Keys gewinnen gegen Synonyme, daher befüllt
+  `{ "body:13": "right", "content": "left" }` beide korrekt.
+- **`subtitle` bei einem Master ohne `subTitle`-Platzhalter** (häufig bei Corporate-Mastern: Die
+  Untertitelzeile eines Titellayouts ist ein normaler `body`-Platzhalter) fällt auf den ersten freien
+  `body`-Slot zurück, statt in `unknownFields` zu landen.
+- **`create_powerpoint_from_template` lehnt eine Vorlage ohne `{{}}`-Platzhalter ab** – wenn auch
+  `images`, `charts` und `speaker_notes` fehlen – und nennt in der Fehlermeldung die Layout-Tools. Das
+  ist das Signal für Weg C, keine defekte Vorlage – versuche das Legacy-Tool nicht erneut und füge
+  einem Corporate-Master keine `{{}}`-Marker hinzu.
+- **`pic:*`-Slots erhalten Bilder über `images`, nicht über `fields`.** Ein `pic`-Key in `fields`
+  befüllt nichts – der Slot bleibt leer.
+- **Nur `add_slides_from_layouts` behält die Dokument-id**, wenn du einen Weg-C-Foliensatz
+  erweiterst. `create_powerpoint_from_layouts` mit `drop_template_slides: false` erzeugt ein _neues_
+  Dokument – nützlich, wenn der Nutzer eine Kopie will, falsch, wenn er das Vorhandene erweitern wollte.
+- **`append_slides_to_powerpoint` auf einem Corporate-Foliensatz liefert Folien im
+  companyFILES-Stil.** Die generierten Folien bringen ihr eigenes Design mit und werden auf das erste
+  Layout des Foliensatzes umgemappt, sodass sie auf einem Design-Foliensatz unpassend aussehen. Die
+  Antwort weist in `designNote` darauf hin; verwende `add_slides_from_layouts`.
+- **Layoutnamen sind nicht eindeutig.** Mehrdeutige Namensreferenzen werden zum ersten Treffer
+  aufgelöst und protokollieren eine Warnung; verwende `layoutId`.
+- **`list_templates` enthält den Layout-Katalog nicht.** `describe_pptx_template` schon.
+- **Schreibe in Weg C keine Formatierung.** Farben/Schriften zu übergeben ist weder möglich noch
+  gewollt – der Master bestimmt das Design.
+- **Downloads:** Jeder Erstellungsaufruf sowie jeder Append-/Update-/Patch-Aufruf auf einem
+  companyFILES-Dokument liefert `{ id, filename, downloadUrl, markdownLink }` (plus
+  `librechat_file_id`, wenn der Foliensatz auch als Chat-Datei gespeichert ist). Gib in der Antwort
+  immer `markdownLink` aus. Bei einem direkt aktualisierten Chat-Anhang enthält die Antwort
+  `librechat_file_id`, `filename` und `message`, aber **keinen** Download-Link – teile dem Nutzer mit,
+  dass der angehängte Foliensatz aktualisiert wurde. Konnte der Anhang nicht direkt aktualisiert
+  werden, wird ein neues Dokument mit eigener `id` und eigenem `markdownLink` zurückgegeben.
+- **Theming (Weg A/B):** Das Farbtheme der Organisation/des Nutzers wird automatisch aus den
+  Einstellungen übernommen; Theme-Argumente sind nicht nötig. **Kein PowerPoint-Tool platziert
+  automatisch ein Logo.** In Weg B wird nur `{{company_name}}` automatisch befüllt (aus dem Firmennamen
+  in den Einstellungen); ein Logo braucht einen `{%logo}`-Bildplatzhalter und einen expliziten
+  `images`-Eintrag. Automatisches Einfügen des Logos gibt es nur bei den Word-Vorlagen-Tools.
 
-**Path A — scratch deck, built iteratively**
+---
 
-1. `create_powerpoint` — no `title` argument, 3 slides: `section`, `default` (bullets +
-   `htmlTable` with coloured cells), `text-image` **without** `image` → expect a skeleton box.
-   → 3 slides, note `document_id`. (Repeat once **with** `title` to confirm the generated title
-   slide appears and shifts numbering to 4.)
-2. `append_slides_to_powerpoint` — `slides`: a `default` with a `code` block and a `table`, plus
-   a `text-image` **with** `image: "lc:<file_id>"`. → same `document_id`, 5 slides.
-3. `append_slides_to_powerpoint` — `markdown` with two `##` headings and a `???` notes block.
-   → 7 slides, notes visible in the presenter view.
-4. `update_powerpoint_slide` — `slide_number: 2`, a single-element `slides` array of type
-   `section`. → still 7 slides, slide 2 is now a divider.
-5. `read_powerpoint_slides` → `slide_count: 7`, titles in the expected order.
+## 8. End-to-End-Testlauf
 
-**Path C — corporate master, built iteratively**
+Ein einziger Durchlauf, der alle Folienfunktionen abdeckt. Nützlich, um ein Deployment zu überprüfen.
 
-6. Upload the master as a `potx` template → log line
-   `Auto-extracted N slide layout(s) from PPTX template …`, `placeholders` empty.
-7. `describe_pptx_template` → `hasLegacyPlaceholders: false`, layouts with `layoutId`, `name`,
-   `masterId`, `role`, slot keys including at least one `body:idx` pair and one `pic:*`.
-8. `create_powerpoint_from_layouts` — 5 slides addressed by **role**, **name** and **layoutId**
-   mixed; include multi-level bullets, a two-column layout filling `body:12` + `body:13`, a `\n`
-   inside a value, and `notes` on slide 1.
-   → open in PowerPoint: corporate fonts/colours/logos, real master bullets, and **"Reset
-   layout" changes nothing**.
-9. `set_powerpoint_slide_fields` — patch only the `title` of slide 2 → same `document_id`, same
-   slide count, other slots untouched.
-10. `create_powerpoint_from_layouts` with `document_id` (not `template_name`) and
-    `drop_template_slides: false` → 6 slides, appended slide in the same corporate design.
+**Weg A – Foliensatz von Grund auf, iterativ erstellt**
 
-**Error paths**
+1. `create_powerpoint` – ohne `title`-Argument, 3 Folien: `section`, `default` (Aufzählung +
+   `htmlTable` mit farbigen Zellen), `text-image` **ohne** `image` → Skelettkasten erwartet.
+   → 3 Folien, `document_id` notieren. (Einmal **mit** `title` wiederholen, um zu bestätigen, dass die
+   generierte Titelfolie erscheint und die Nummerierung auf 4 verschiebt.)
+2. `append_slides_to_powerpoint` – `slides`: ein `default` mit `code`-Block und `table` sowie ein
+   `text-image` **mit** `image` als base64-Data-URI. → dieselbe `document_id`, 5 Folien.
+3. `append_slides_to_powerpoint` – `markdown` mit zwei `##`-Überschriften und einem `???`-Notizblock.
+   → 7 Folien, Notizen in der Referentenansicht sichtbar.
+4. `update_powerpoint_slide` – `slide_number: 2`, ein `slides`-Array mit einem Element vom Typ
+   `section`. → weiterhin 7 Folien, Folie 2 ist jetzt ein Kapiteltrenner.
+5. `read_powerpoint_slides` → `slide_count: 7`, Titel in der erwarteten Reihenfolge.
 
-11. `"layout": "GibtsNicht"` → error listing all layouts **and** roles.
-12. `fields: { "untertitel": "x" }` on a layout without that slot → `unknownFields: ["untertitel"]`.
-13. `slide_number: 99` on `set_powerpoint_slide_fields` → error naming the real slide count.
-14. `reference_slide` together with `slides` → error.
-15. A deck **with** `{{}}` markup through `describe_pptx_template` →
-    `hasLegacyPlaceholders: true` → switch to `create_powerpoint_from_template`.
+**Weg C – Corporate-Master, iterativ erstellt**
+
+6. Master als `potx`-Vorlage hochladen → Logzeile
+   `Auto-extracted N slide layout(s) from PPTX template …`, `placeholders` leer.
+7. `describe_pptx_template` → `hasLegacyPlaceholders: false`, Layouts mit `layoutId`, `name`,
+   `masterId`, `role`, Slot-Keys mit mindestens einem `body:idx`-Paar und einem `pic:*`.
+8. `create_powerpoint_from_layouts` – 5 Folien, gemischt über **Rolle**, **Name** und **layoutId**
+   adressiert; mit mehrstufiger Aufzählung, einem zweispaltigen Layout, das `body:12` + `body:13`
+   befüllt, einem `\n` innerhalb eines Werts und `notes` auf Folie 1.
+   → in PowerPoint öffnen: Corporate-Schriften/-Farben/-Logos, echte Master-Aufzählungszeichen, und
+   **„Folie zurücksetzen“ ändert nichts**.
+9. `set_powerpoint_slide_fields` – nur den `title` von Folie 2 ändern → dieselbe `document_id`,
+   gleiche Folienanzahl, andere Slots unberührt.
+10. `add_slides_from_layouts` mit dieser `document_id` → **dieselbe** `document_id`, 6 Folien, die neue
+    im selben Corporate Design. Mit `insert_after: 1` wiederholen → die Folie landet an Position 2.
+11. `set_powerpoint_slide_fields` mit `images: { "pic:14": { "librechat_file_id": "<png>" } }` auf
+    einer Titel-Bild-Folie → das Bild füllt den Platzhalterrahmen, zugeschnitten statt verzerrt, und
+    `slide.filledImageSlots` in der Antwort listet `pic:14`.
+
+**Weg D – ein im Chat angehängter Foliensatz**
+
+12. Eine `.pptx` an eine Chat-Nachricht anhängen → `list_my_files` zeigt sie mit einer `file_id`.
+13. `describe_pptx_template { "librechat_file_id": "<file_id>" }` → derselbe Katalog wie in Schritt 7,
+    ohne Vorlagen-Upload.
+14. `read_powerpoint_slides { "librechat_file_id": "<file_id>" }` → Folien in der Reihenfolge, in der
+    PowerPoint sie anzeigt, jeweils mit `layoutId` und `slots`.
+15. `add_slides_from_layouts` gegen diese `file_id` → die `message` in der Antwort sagt, dass der
+    Anhang direkt aktualisiert wurde (gleiche `file_id`, `librechat_file_id` in der Antwort) oder dass
+    die geänderte Kopie als neues Dokument gespeichert wurde (neue `id` und `markdownLink`).
+
+**Fehlerpfade**
+
+16. `"layout": "GibtsNicht"` → Fehler, der alle Layouts **und** Rollen auflistet.
+17. `fields: { "untertitel": "x" }` auf einem Layout ohne diesen Slot → `unknownFields: ["untertitel"]`.
+18. `slide_number: 99` bei `set_powerpoint_slide_fields` → Fehler mit der tatsächlichen Folienanzahl.
+19. `reference_slide` zusammen mit `slides` → Fehler.
+20. Ein Foliensatz **mit** `{{}}`-Markup durch `describe_pptx_template` →
+    `hasLegacyPlaceholders: true` → zu `create_powerpoint_from_template` wechseln.
+21. `add_slides_from_layouts` auf einem mit `create_powerpoint` erstellten Foliensatz → Fehler, der
+    `append_slides_to_powerpoint` nennt, und die Folienanzahl des Foliensatzes bleibt unverändert.
+22. `add_slides_from_layouts` mit `insert_after` jenseits der Folienanzahl → Fehler mit der
+    tatsächlichen Anzahl.
+
+`MANUAL_TESTS.md` §4.6 (Corporate-Master) und §4.9 (im Chat angehängter Foliensatz) enthalten diese
+Szenarien als direkt ausführbare cURL-Befehle.

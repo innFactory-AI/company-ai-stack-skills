@@ -15,6 +15,7 @@ Erstelle funktionsübergreifende Statusberichte, die Fortschritt, Risiken, Abhä
 | **Kalender / Meeting-Notizen über MCP** | Aktuelle Entscheidungen, Action Items, anstehende Meilensteine |
 | **Risikoregister** | Offene Risiken, Status der Gegenmaßnahmen, neu aufgekommene Risiken |
 | **Kommunikationskanäle über MCP** (z. B. Slack, Teams) | Eskalationen, teamübergreifende Anfragen, gemeldete Blocker |
+| **companyM365** (falls aktiviert) | Outlook-Kalender und -Mails, Teams-Nachrichten, OneNote-Seiten und Transkripte von Teams-Meetings |
 | **companyRAG-Sammlungen / Datei-Upload** | Frühere Statusberichte, Programmpläne, OKRs |
 
 > **Keine angebundene Quelle?** Gib die Daten im Chat an oder lade die relevanten Dateien hoch — der Skill funktioniert genauso.

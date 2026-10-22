@@ -14,6 +14,7 @@ Combine CRM context, attendee intelligence, and deal history into a concise, act
 | **CRM via MCP** (e.g. Salesforce, HubSpot, Dynamics) | Deal stage, history, contact roles, notes, past activity timeline |
 | **Calendar via MCP** (e.g. Google Calendar, Outlook) | Meeting time, attendees, agenda, recurring pattern |
 | **Email via MCP** (e.g. Gmail, Outlook) | Recent correspondence, open threads, tone of last exchange |
+| **companyM365** (if enabled) | Outlook calendar and mail, plus people lookup from your Microsoft 365 account |
 | **companyRAG collections** | Discovery frameworks, objection libraries, relevant proof points |
 | **Web search via MCP** (e.g. LinkedIn, company news) | Attendee background, recent company signals |
 

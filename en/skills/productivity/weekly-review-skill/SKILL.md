@@ -14,6 +14,7 @@ Gather open work, assess progress, surface blockers, and produce a clear plan fo
 | **Task manager via MCP** (e.g. Jira, Linear, Asana, Todoist, Monday.com, Notion) | Open tasks, due dates, status, assignee |
 | **Calendar via MCP** (e.g. Google Calendar, Outlook Calendar) | Upcoming meetings, time blocks, deadlines |
 | **Email & chat via MCP** (e.g. Gmail, Outlook, Slack, Microsoft Teams) | Action items from correspondence, commitments made in conversations, mentions |
+| **companyM365** (if enabled) | Outlook calendar and mail, Teams messages, Microsoft To Do and Planner tasks from your Microsoft 365 account |
 | **companyRAG / file upload** | Review templates, project briefs, meeting notes with action items |
 
 > **No connected source?** Provide the data in chat or upload the relevant files — the skill works the same way.

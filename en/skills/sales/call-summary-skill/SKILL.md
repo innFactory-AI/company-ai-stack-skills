@@ -13,6 +13,8 @@ Turn call notes or transcripts into actionable intelligence and draft customer-r
 | --- | --- |
 | **CRM via MCP** (e.g. HubSpot, Salesforce) | Account context, opportunity stage, known stakeholders, prior call notes |
 | **Call-recording / transcription via MCP** (e.g. Gong) | Raw transcripts, participant lists, timestamps of key moments |
+| **companyTRANSCRIBE** (if enabled) | Transcribes a call recording (audio or video) attached to the chat with speaker labels, or retrieves your existing transcripts |
+| **companyM365** (if enabled) | Transcripts of Teams meetings |
 | **companyRAG collections** | Discovery summaries, competitive profiles, product info for context-aware follow-ups |
 | **File upload (transcripts)** | Transcript or notes files you drop directly into the chat |
 

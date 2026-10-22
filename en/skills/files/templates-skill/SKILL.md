@@ -37,7 +37,7 @@ Tools for listing and filling document templates (Word, Excel, ODT, PowerPoint).
 
 Returns per template: `name`, `displayName`, `description`, `category`, `tags`, placeholder lists, `loopSources`, `fields` (for PDF form templates), `size`, `isDefault`, upload dates, and scope (`"user"` personal or `"global"`).
 
-For **POTX/PPTX** templates the response includes a per-slide breakdown:
+For **POTX/PPTX** templates the response includes a per-slide breakdown (`slideInfo`):
 
 - `slideNumber` — 1-based slide index
 - `layoutName` — PowerPoint layout name (e.g. `"Title Slide"`, `"Two Content"`)
@@ -63,8 +63,7 @@ Placeholder syntax: `{placeholder}` (single curly braces). Dotted paths: `{user.
     "date": "2025-05-08",
     "total": "€4,200.00"
   },
-  "filename": "invoice_acme",
-  "folder": "invoices"
+  "filename": "invoice_acme"
 }
 ```
 
@@ -77,6 +76,8 @@ Placeholder syntax: `{placeholder}` (single curly braces). Dotted paths: `{user.
 ```
 
 Pass `items` as an array in `data`. Missing loop sources are silently skipped with a warning.
+
+**Template expressions are not JavaScript.** Inside `{…}` commands only data paths (`$item.price`, `rows[0]`), literals, operators (`+ - * / %`, comparisons, `&& || ??`, `cond ? a : b`), the commands `FOR`, `IF` and `EXEC`, and a short allowlist of helpers work — e.g. `toFixed`, `toUpperCase`, `join`, `toLocaleDateString`, `Math.round`, `parseFloat`, `new Date(…)`. Arrow functions, `.map`/`.filter`, loops and template literals make the fill fail — compute such values beforehand and pass them in `data`.
 
 ---
 
@@ -97,8 +98,7 @@ Supports text placeholders `{name}` and image placeholders `{%logo}`.
       "extension": "png"
     }
   },
-  "filename": "letter_acme",
-  "folder": "letters"
+  "filename": "letter_acme"
 }
 ```
 
@@ -130,8 +130,7 @@ Accepts **either** cell addresses (e.g. `"A1"`, `"Sheet2!B3"`) **or** `{{placeho
     "B5": 125000,
     "Sheet2!C3": "Approved"
   },
-  "filename": "budget_2025",
-  "folder": "finance"
+  "filename": "budget_2025"
 }
 ```
 
@@ -182,11 +181,11 @@ Placeholder syntax:
 - **Text:** `{{key}}` anywhere in a text box
 - **Image:** `{%name}` in the **alt text** (`descr` attribute) of an image shape
 - **Chart:** `{{name}}` in the **alt text** of a chart container shape
-- **Layout marker:** `{{slide_type:default}}`, `{{slide_type:section}}`, `{{slide_type:text-image}}` — invisible metadata marker; declares the slide's role. Cleared automatically from the output.
+- **Layout marker:** `{{slide_type:default}}`, `{{slide_type:section}}`, `{{slide_type:text-image}}` — invisible metadata marker; declares the slide's layout type for `repeat` routing (multi-source). Cleared automatically from the output. The layout-native tools (`create_powerpoint_from_layouts`, `add_slides_from_layouts`) ignore it.
 
 Always run `list_templates` first — for POTX/PPTX it returns a per-slide breakdown including `layoutName`, `layoutType` (from the `{{slide_type:xxx}}` marker), and which text/image/chart placeholders belong to each slide.
 
-> **If the POTX/PPTX template has NO placeholders**, this tool refuses the call and names the layout tools instead — `list_templates` flags such templates with `hasLegacyPlaceholders: false` and a `nextStep` hint. Corporate-design slide masters (Folienmaster) shipped by design teams usually contain no `{{}}` markup at all — they carry named slide layouts instead. Run `describe_pptx_template { "template_name": "..." }`: when `hasLegacyPlaceholders` is `false`, switch to `create_powerpoint_from_layouts` (see **powerpoint-skill**, "corporate master without `{{}}`"). Never ask the user to type `{{}}` markers into a corporate master.
+> **If the POTX/PPTX template has NO `{{}}` placeholders** and the call passes no `images`, `charts` or `speaker_notes`, this tool refuses the call and names the layout tools instead — `list_templates` flags such templates with `hasLegacyPlaceholders: false` and a `nextStep` hint. Corporate-design slide masters (Folienmaster) shipped by design teams usually contain no `{{}}` markup at all — they carry named slide layouts instead. Run `describe_pptx_template { "template_name": "..." }`: when `hasLegacyPlaceholders` is `false`, switch to `create_powerpoint_from_layouts` (see **powerpoint-skill**, "corporate master without `{{}}`"). Never ask the user to type `{{}}` markers into a corporate master.
 
 **Basic usage (single-record fill):**
 
@@ -212,12 +211,17 @@ Always run `list_templates` first — for POTX/PPTX it returns a per-slide break
       "datasets": [{ "label": "Revenue", "values": [100, 150, 120, 180] }]
     }
   },
-  "filename": "q4_deck",
-  "folder": "presentations"
+  "filename": "q4_deck"
 }
 ```
 
 `speaker_notes` keys are **1-based** slide numbers.
+
+`charts` only renames the chart's series (`datasets[].label`). `labels` and `values` are **not** applied yet — the server logs them as "not yet implemented" and the chart keeps the template's data. Do not promise the user updated chart numbers.
+
+No logo is placed automatically in PowerPoint templates: only `{{company_name}}` is auto-filled from the settings. To show a logo, pass it explicitly in `images` (e.g. `"logo"` for `{%logo}`).
+
+The tool takes only `template_name` — no `document_id` / `librechat_file_id`. A `{{}}` deck attached in the chat must be uploaded as a template first, or be edited in clone mode (see **powerpoint-skill** §2a).
 
 **Single-source repeat** (duplicate one slide per data record):
 
@@ -255,9 +259,10 @@ Use this when the template has multiple layout slides marked with `{{slide_type:
 
 Omit `repeat.slide` when using `slide_type` routing — the matching template slide is found automatically from its `{{slide_type:xxx}}` marker. The `slide_type` values (`default`, `section`, `text-image`) correspond to the same layout names used in `create_powerpoint`.
 
+
 ## Post-Template Editing (Iterative Updates)
 
-Every template tool returns a `document_id`. That ID can be passed directly to the iterative editing tools from **word-odt-skill** and **powerpoint-skill** to further modify the filled document without regenerating from scratch.
+Every template tool returns the new document's `id`. Pass it as `document_id` to the iterative editing tools from **word-odt-skill** and **powerpoint-skill** to further modify the filled document without regenerating from scratch.
 
 ### After `create_word_from_template` / `create_word_from_template_with_images`
 
@@ -272,7 +277,7 @@ Example — fill a template then append a custom appendix:
 ```json
 // Step 1: fill the template
 { "template_name": "report", "data": { "title": "Annual Report" } }
-// → returns document_id "abc123"
+// → returns id "abc123" (use it as document_id)
 
 // Step 2: append extra content
 { "document_id": "abc123", "content": "## Appendix A\n\nAdditional data...", "add_page_break": true }
@@ -295,7 +300,7 @@ Example — fill a template then append a custom closing slide:
 ```json
 // Step 1: fill the template
 { "template_name": "corporate_deck", "placeholders": { "title": "Q4 Results" } }
-// → returns document_id "def456"
+// → returns id "def456" (use it as document_id)
 
 // Step 2a: add a generic (non-template-styled) closing slide
 { "document_id": "def456", "slides": [{ "type": "section", "title": "Thank You", "subtitle": "Questions?" }] }
@@ -307,7 +312,7 @@ Example — fill a template then append a custom closing slide:
 ## Key Notes
 
 - All create tools return `{id, filename, downloadUrl, markdownLink}` — always render `markdownLink` in the reply.
-- When `folder` is omitted, the filled document is filed under a folder named after `template_name`.
+- When `filename` is omitted, the filled document is named after `template_name` (`create_word_from_template_with_images`: `document`).
 - `create_word_from_template_with_images` falls back to a global `default.docx` if the named template is missing, whereas `create_word_from_template` does not — verify the template exists with `list_templates` first.
 - Template names are **case-sensitive** — always verify with `list_templates` first.
 - User templates take priority over global templates with the same name.

@@ -16,9 +16,9 @@ Tools for creating PDF documents, reading PDF content, and filling/flattening PD
 | `read_pdf`                  | Extract text and metadata from a PDF                                                   |
 | `read_pdf_form_fields`      | List the fillable fields of **any** uploaded/created PDF (no template needed)          |
 | `fill_pdf_form_fields`      | Fill **any** uploaded/created PDF's fields, saving a new PDF (`flatten` for read-only) |
-| `list_pdf_form_templates`   | List pre-registered PDF form templates and their fields                                |
-| `fill_pdf_form`             | Fill a registered template form — fields remain editable                               |
-| `fill_and_flatten_pdf_form` | Fill and flatten a registered template form (read-only / final)                        |
+| `list_pdf_form_templates`   | List the user's personal PDF form templates and their fields                           |
+| `fill_pdf_form`             | Fill a personal PDF form template — fields remain editable                             |
+| `fill_and_flatten_pdf_form` | Fill and flatten a personal PDF form template (read-only / final)                      |
 
 ## Decision Guide
 
@@ -27,13 +27,13 @@ User wants to CREATE a PDF from...
   Markdown             → create_pdf
   HTML / CSS           → create_pdf_from_html
 
-User wants to READ a PDF → read_pdf
+User wants to READ a PDF → read_pdf  (scanned PDF without text layer → read_file with OCR, if available)
 
 User wants to FILL a PDF form...
-  An uploaded/arbitrary PDF (PREFERRED, no registration needed):
+  An uploaded/arbitrary PDF (PREFERRED, no template needed):
     1. read_pdf_form_fields   (discover exact field names + types)
     2. fill_pdf_form_fields   (set flatten=true to lock the result)
-  A pre-registered template form:
+  A personal PDF form template (a template of type pdf):
     1. list_pdf_form_templates  (discover available templates + fields)
     2. fill_pdf_form            (editable) OR fill_and_flatten_pdf_form (locked)
 ```
@@ -54,8 +54,7 @@ User wants to FILL a PDF form...
   "footer_text": "Acme Corp",
   "show_page_numbers": true,
   "page_number_position": "footer",
-  "page_number_format": "{page} / {pages}",
-  "folder": "reports"
+  "page_number_format": "{page} / {pages}"
 }
 ```
 
@@ -68,8 +67,7 @@ User wants to FILL a PDF form...
   "filename": "invoice",
   "title": "Invoice #1234",
   "page_size": "A4",
-  "show_page_numbers": true,
-  "folder": "invoices"
+  "show_page_numbers": true
 }
 ```
 
@@ -83,7 +81,7 @@ Supports inline images via `doc:<documentId>` (stored doc) or `lc:<file_id>` (Li
 }
 ```
 
-Accepts any one of `file_content` (base64), `librechat_file_id`, or `document_id`. Returns extracted text and metadata.
+Accepts any one of `file_content` (base64), `librechat_file_id`, or `document_id`. Returns extracted text and metadata. `read_pdf` reads the PDF's text layer only (no OCR) — for a scanned PDF without text, use `read_file` from the **file-management-skill** where available.
 
 ### read_pdf_form_fields
 
@@ -112,8 +110,7 @@ Fill the fields of any uploaded/created PDF and save the result as a **new** PDF
     "department": "Engineering"
   },
   "flatten": false,
-  "filename": "application_alice",
-  "folder": "applications"
+  "filename": "application_alice"
 }
 ```
 
@@ -135,7 +132,7 @@ Use the option values from `read_pdf_form_fields` **verbatim** when filling. On 
 {}
 ```
 
-Returns a list of available PDF form templates with field names and types (text, checkbox, radio, dropdown).
+Returns `{ templates: [{ name, uploadedAt, size, fields }] }` — the user's personal PDF form templates with field names, types (text, checkbox, radio, dropdown) and options.
 
 ### fill_pdf_form
 
@@ -148,8 +145,7 @@ Returns a list of available PDF form templates with field names and types (text,
     "agree": true,
     "department": "Engineering"
   },
-  "filename": "application_alice",
-  "folder": "applications"
+  "filename": "application_alice"
 }
 ```
 
@@ -164,8 +160,7 @@ Fields remain **editable** after filling.
     "fullName": "Alice Smith",
     "agree": true
   },
-  "filename": "application_alice_final",
-  "folder": "applications"
+  "filename": "application_alice_final"
 }
 ```
 
@@ -184,8 +179,8 @@ Form is **flattened** (read-only) — use for final/archival copies.
 ## Key Notes
 
 - All create tools return `{id, filename, downloadUrl, markdownLink}` — always render `markdownLink` in the reply.
-- **To fill an arbitrary uploaded PDF**, use `read_pdf_form_fields` + `fill_pdf_form_fields` — no template registration needed. The `*_pdf_form` / `*_form_templates` tools only work with pre-registered templates.
-- Pre-registered PDF form templates are managed via the admin API (upload via `POST /api/admin/pdf-forms`).
-- When `folder` is omitted on `fill_pdf_form` / `fill_and_flatten_pdf_form`, the output is filed under a folder named after the template.
+- **To fill an arbitrary uploaded PDF**, use `read_pdf_form_fields` + `fill_pdf_form_fields` — no template needed. The `*_pdf_form` / `*_form_templates` tools only work with the user's personal PDF form templates.
+- PDF form templates are personal: they are the user's own templates of type `pdf`. There are no global or admin-managed PDF form templates. The template upload in the companyFILES web UI currently accepts only .docx, .xlsx, .potx and .pptx, so personal PDF form templates can only be added through the REST API — in practice, fill PDFs with `read_pdf_form_fields` + `fill_pdf_form_fields`.
+- When `filename` is omitted on `fill_pdf_form` / `fill_and_flatten_pdf_form`, the output is named `<YYYYMMDD>_<template_name>.pdf`.
 - Field value types: strings for text/dropdown/radio fields, booleans for checkboxes.
 - Org/user color theme is automatically applied when configured.

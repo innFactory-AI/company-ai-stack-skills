@@ -264,4 +264,4 @@ Use after completing the design to validate completeness:
 - Never present capacity estimates as precise. Label all estimates as `[Order-of-magnitude estimate — validate with load testing]`.
 - Source-label outputs as `[From user requirements]`, `[Design methodology]`, or `[AI assessment — verify]`.
 
-> **Tip:** Ask for Markdown or DOCX output via companyFILES to get a formatted document ready for distribution. Diagrams provided as a Mermaid block are rendered by companyFILES.
+> **Tip:** Ask for Markdown or DOCX output via companyFILES to get a formatted document ready for distribution. companyFILES renders Mermaid blocks as a separate interactive diagram with PNG download, not inside the document.

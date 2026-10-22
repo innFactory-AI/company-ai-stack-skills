@@ -15,6 +15,7 @@ Build cross-functional status reports that surface progress, risks, dependencies
 | **Calendar / meeting notes via MCP** | Recent decisions, action items, upcoming milestones |
 | **Risk register** | Open risks, mitigation status, new risks raised |
 | **Communication channels via MCP** (e.g. Slack, Teams) | Escalations, cross-team requests, blockers raised |
+| **companyM365** (if enabled) | Outlook calendar and mail, Teams messages, OneNote pages and Teams meeting transcripts |
 | **companyRAG collections / file upload** | Previous status reports, programme plans, OKRs |
 
 > **No connected source?** Provide the data in chat or upload the relevant files — the skill works the same way.

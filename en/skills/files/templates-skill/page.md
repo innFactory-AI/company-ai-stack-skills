@@ -1,0 +1,7 @@
+---
+title: Templates Skill
+description: Create documents from templates using companyFILES MCP tools — Word, Excel, ODT, and PowerPoint, including image placeholders, charts, and loop/repeat syntax.
+label: Templates
+---
+
+Use this skill when asked to fill a template, use a company letterhead or invoice layout, fill placeholders, or create documents from DOCX, XLSX, POTX, or ODT templates — including image placeholders, charts, and slide repeat, plus iterative edits to the filled document.
