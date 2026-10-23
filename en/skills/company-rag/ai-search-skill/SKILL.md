@@ -44,16 +44,34 @@ Filter content purely by metadata, without a search term.
 | --- | --- | --- | --- |
 | `filter` | object | yes | JSON filter, e.g. `{"$and": [{"type": "invoice"}, {"amount": {"$gt": 1000}}]}` |
 | `collection` | string | no (always pass it) | `<your-collection>` |
+| `offset` | number | no | First chunk to return (default 0) |
 
-The tool returns **all** matching chunks, with no upper limit. Filter as narrowly as possible.
+One answer holds at most 1000 chunks. If more match, the answer ends with the `offset` to continue with. Filter as narrowly as possible.
 
 ### Filter Syntax (for `filter` in both tools)
 
-- **Direct match:** `{"type": "invoice"}` means exact equality on the metadata field.
-- **Comparison:** `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, e.g. `{"amount": {"$gt": 1000}}`. Numbers are compared numerically, text lexicographically, so pass dates as ISO dates (`2024-01-31`).
+- **Direct match:** `{"type": "invoice"}` means equality on the metadata field. For a list field such as `tags`, the list must contain the value: `{"tags": "sales"}`.
+- **Comparison:** `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, e.g. `{"amount": {"$gt": 1000}}`. Numbers are compared numerically, text lexicographically, so pass dates as ISO dates (`2024-01-31`). `$ne` also matches documents that don't have the field.
+- **Lists and missing fields:** `$contains` (list contains the value, or all values of a list), `$in` (value is one of a list, or the list field contains one of them), `$exists` (`true`/`false`), e.g. `{"tags": {"$in": ["finance", "hr"]}}`.
 - **Range:** several operators on one field, e.g. `{"date": {"$gte": "2024-01-01", "$lte": "2024-12-31"}}`.
 - **Logical:** `$and` and `$or` (each a list of conditions), `$not` (one object). Several top-level fields are combined with AND.
-- **Not supported:** other operators such as `$in`, `$contains`, or `$exists`, and nested field paths. They cause an error.
+- **Not supported:** other operators and nested field paths. They cause an error.
+
+### Knowledge Bundles (OKF)
+
+If the collection contains OKF knowledge documents (Markdown with frontmatter, e.g. maintained with companyKNOWLEDGE), every hit carries these metadata fields:
+
+| Field | Values |
+| --- | --- |
+| `type`, `tags` | Kind of document (e.g. `Playbook`), list of tags |
+| `okf_status` | `draft`, `stable`, `deprecated` (missing in the document means `stable`) |
+| `okf_trust_tier` | `unverified`, `machine-confirmed`, `human-reviewed` |
+| `okf_verified_at`, `okf_generated_at` | Last review, last content change (ISO date/time, UTC) |
+| `okf_stale_after` | From this time on the content counts as outdated |
+
+- By default, leave out drafts and outdated content. Use the current time as an ISO date/time in UTC: `{"$and": [{"okf_status": {"$ne": "draft"}}, {"$or": [{"okf_stale_after": {"$exists": false}}, {"okf_stale_after": {"$gt": "2026-10-23T00:00:00Z"}}]}]}`
+- If the user asks for drafts or older content, drop the matching condition.
+- Say so in the answer when a source is `deprecated`, outdated, or not human-reviewed (`okf_trust_tier` other than `human-reviewed`).
 
 ## Result Format
 

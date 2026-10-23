@@ -44,16 +44,34 @@ Inhalte rein über Metadaten filtern, ohne Suchbegriff.
 | --- | --- | --- | --- |
 | `filter` | object | ja | JSON-Filter, z. B. `{"$and": [{"type": "invoice"}, {"amount": {"$gt": 1000}}]}` |
 | `collection` | string | nein (immer angeben) | `<deine-collection>` |
+| `offset` | number | nein | Erster zurückgegebener Abschnitt (Standard 0) |
 
-Das Tool liefert **alle** passenden Abschnitte, ohne Obergrenze. Filtere deshalb so eng wie möglich.
+Eine Antwort enthält höchstens 1000 Abschnitte. Passen mehr, nennt das Ende der Antwort das `offset` für den nächsten Aufruf. Filtere so eng wie möglich.
 
 ### Filter-Syntax (für `filter` in beiden Tools)
 
-- **Direkter Abgleich:** `{"type": "invoice"}` entspricht exakter Gleichheit auf dem Metadatenfeld.
-- **Vergleich:** `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, z. B. `{"amount": {"$gt": 1000}}`. Zahlen werden numerisch verglichen, Texte lexikografisch. Datumswerte deshalb als ISO-Datum (`2024-01-31`) angeben.
+- **Direkter Abgleich:** `{"type": "invoice"}` entspricht Gleichheit auf dem Metadatenfeld. Bei einem Listenfeld wie `tags` muss die Liste den Wert enthalten: `{"tags": "sales"}`.
+- **Vergleich:** `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, z. B. `{"amount": {"$gt": 1000}}`. Zahlen werden numerisch verglichen, Texte lexikografisch. Datumswerte deshalb als ISO-Datum (`2024-01-31`) angeben. `$ne` passt auch auf Dokumente ohne das Feld.
+- **Listen und fehlende Felder:** `$contains` (Liste enthält den Wert bzw. alle Werte einer Liste), `$in` (Wert ist einer aus der Liste, oder das Listenfeld enthält einen davon), `$exists` (`true`/`false`), z. B. `{"tags": {"$in": ["finance", "hr"]}}`.
 - **Bereich:** mehrere Operatoren auf einem Feld, z. B. `{"date": {"$gte": "2024-01-01", "$lte": "2024-12-31"}}`.
 - **Logisch:** `$and` und `$or` (jeweils eine Liste von Bedingungen), `$not` (ein Objekt). Mehrere Felder auf oberster Ebene werden mit UND verknüpft.
-- **Nicht unterstützt:** andere Operatoren wie `$in`, `$contains` oder `$exists` sowie verschachtelte Feldpfade. Sie führen zu einem Fehler.
+- **Nicht unterstützt:** andere Operatoren und verschachtelte Feldpfade. Sie führen zu einem Fehler.
+
+### Wissens-Bundles (OKF)
+
+Enthält die Collection OKF-Wissensdokumente (Markdown mit Frontmatter, z. B. mit companyKNOWLEDGE gepflegt), trägt jeder Treffer diese Metadatenfelder:
+
+| Feld | Werte |
+| --- | --- |
+| `type`, `tags` | Art des Dokuments (z. B. `Playbook`), Liste von Schlagwörtern |
+| `okf_status` | `draft`, `stable`, `deprecated` (fehlt er im Dokument, gilt `stable`) |
+| `okf_trust_tier` | `unverified`, `machine-confirmed`, `human-reviewed` |
+| `okf_verified_at`, `okf_generated_at` | Letzte Prüfung, letzte inhaltliche Änderung (ISO-Datum/-Zeit, UTC) |
+| `okf_stale_after` | Ab diesem Zeitpunkt gilt der Inhalt als veraltet |
+
+- Lass Entwürfe und veraltete Inhalte standardmäßig weg. Setze die aktuelle Zeit als ISO-Datum/-Zeit in UTC ein: `{"$and": [{"okf_status": {"$ne": "draft"}}, {"$or": [{"okf_stale_after": {"$exists": false}}, {"okf_stale_after": {"$gt": "2026-10-23T00:00:00Z"}}]}]}`
+- Fragt der Benutzer ausdrücklich nach Entwürfen oder älteren Inhalten, lass die passende Bedingung weg.
+- Sag in der Antwort dazu, wenn eine Quelle `deprecated`, veraltet oder nicht von einem Menschen geprüft ist (`okf_trust_tier` ungleich `human-reviewed`).
 
 ## Ergebnisformat
 
