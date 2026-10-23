@@ -51,6 +51,12 @@ agent picks the skill up when a request matches its `description`. Placeholders 
 | AI Search | [`SKILL.md`](de/skills/company-rag/ai-search-skill/SKILL.md) | [`SKILL.md`](en/skills/company-rag/ai-search-skill/SKILL.md) |
 | Dataset | [`SKILL.md`](de/skills/company-rag/dataset-skill/SKILL.md) | [`SKILL.md`](en/skills/company-rag/dataset-skill/SKILL.md) |
 
+### companyLEARN
+
+| Skill | DE | EN |
+| --- | --- | --- |
+| Course Authoring · Kurse erstellen | [`SKILL.md`](de/skills/company-learn/course-authoring-skill/SKILL.md) | [`SKILL.md`](en/skills/company-learn/course-authoring-skill/SKILL.md) |
+
 ### companyFILES
 
 | Skill | DE | EN |

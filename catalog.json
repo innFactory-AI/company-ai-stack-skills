@@ -35,6 +35,16 @@
       ]
     },
     {
+      "id": "company-learn",
+      "label": {
+        "de": "companyLEARN",
+        "en": "companyLEARN"
+      },
+      "skills": [
+        "course-authoring-skill"
+      ]
+    },
+    {
       "id": "files",
       "label": {
         "de": "companyFILES",
