@@ -285,10 +285,11 @@ Attaches a copy of a template (personal or global) to the current chat as a file
 #### If code execution is available: edit the template with Python
 
 1. Check that the file is there (`/mnt/data/`) and that the library loads (`import docx` / `openpyxl` / `pptx`).
-2. Change text inside the existing runs/cells so the layout stays; never overwrite the input — save the result under a new name in `/mnt/data/`, it comes back as a chat attachment.
-3. Re-open the result and check for leftover placeholders before reporting success.
+2. If you add new content the template does not style (sections, tables, slides), call `get_corporate_ci` first and apply the CI's colors, fonts and sizes; where the template defines styles, the template wins.
+3. Change text inside the existing runs/cells so the layout stays; never overwrite the input — save the result under a new name in `/mnt/data/`, it comes back as a chat attachment.
+4. Re-open the result and check for leftover placeholders before reporting success.
 
-The detailed recipe (Word, Excel, PowerPoint code, pitfalls such as openpyxl dropping charts) is in the bundled file `references/code-template-editing.md` — read it with the built-in `read_file` tool, path `templates-skill/references/code-template-editing.md` (not the companyFILES tool of the same name). It only exists when this skill was installed as a package (zip); if only `SKILL.md` was pasted, use the three steps above.
+The detailed recipe (Word, Excel, PowerPoint code, pitfalls such as openpyxl dropping charts) is in the bundled file `references/code-template-editing.md` — read it with the built-in `read_file` tool, path `templates-skill/references/code-template-editing.md` (not the companyFILES tool of the same name). It only exists when this skill was installed as a package (zip); if only `SKILL.md` was pasted, use the four steps above.
 
 **Fallback without code execution** (or if the file or library is missing): fill the template with the `create_*_from_template` tools above, then refine the result with the iterative tools below (`append_to_word`, `replace_word_content`, `append_slides_to_powerpoint` with `reference_slide`, `modify_excel`). ODT has no Python library in the standard sandbox: use `create_odt_from_template`.
 

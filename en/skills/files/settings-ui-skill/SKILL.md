@@ -1,6 +1,6 @@
 ---
 name: settings-ui-skill
-description: 'Open the companyFILES web UI, view settings, and get help on available tools. Use when asked to show documents, browse files, open the file manager, manage templates, change settings, view branding/colors, or get help on how to use companyFILES tools. Also use when the user wants an interactive embedded view instead of raw JSON.'
+description: 'Open the companyFILES web UI, view settings, and get help on available tools. Use when asked to show documents, browse files, open the file manager, manage templates, change settings, view branding/colors or the corporate identity (CI), need the CI for a document created another way (e.g. with code execution), or get help on how to use companyFILES tools. Also use when the user wants an interactive embedded view instead of raw JSON.'
 ---
 
 # Settings & UI Skill
@@ -12,7 +12,8 @@ Tools for opening the companyFILES web app as an embedded UI, retrieving setting
 | Tool                   | Purpose                                                     |
 | ---------------------- | ----------------------------------------------------------- |
 | `open_companyfiles_ui` | Open the companyFILES web app as an embedded iframe         |
-| `get_settings`         | Get resolved org/user settings (colors, company name, logo) |
+| `get_corporate_ci`     | The corporate identity (CI) as JSON: colors, fonts, sizes, page format, header/footer, page numbers, logo |
+| `get_settings`         | Same as `get_corporate_ci` (older name)                     |
 | `help`                 | Get usage examples for any companyFILES tool category       |
 
 ## Decision Guide
@@ -24,7 +25,8 @@ User says "upload a file" (via UI)                  → open_companyfiles_ui pag
 User says "upload a template" (via UI)              → open_companyfiles_ui page="upload"
 User says "open settings" / "change preferences"   → open_companyfiles_ui page="settings"
 
-User asks about settings / colors / logo            → get_settings
+User asks about CI / colors / fonts / logo          → get_corporate_ci
+Document outside the companyFILES tools (code interpreter) → first get_corporate_ci, then apply the values
 User asks how to use a tool / needs examples        → help (with topic)
 ```
 
@@ -56,29 +58,39 @@ The settings page has no language setting — the language is switched in the ac
 
 ---
 
-### get_settings
+### get_corporate_ci
 
-Returns the resolved settings: org defaults merged with user overrides.
+Returns the resolved corporate identity: the organization settings with the user's personal overrides. `get_settings` returns the same answer (older name).
 
 ```json
 {}
 ```
 
-Example response:
+Example response (shortened; only configured values appear, colors with `#`):
 
 ```json
 {
-  "companyName": "Acme Corp",
-  "companyUrl": "https://acme.com",
-  "primaryColor": "#336699",
-  "secondaryColor": "#66aacc",
-  "accentColor": "#ff6600",
-  "hasLogo": true,
-  "sources": { "companyName": "org", "primaryColor": "user" }
+  "company": { "name": "Acme Ltd", "url": "https://acme.example" },
+  "colors": { "primary": "#336699", "primaryDark": "#264D73", "primaryLight": "#E0E8F0", "heading": "#1F2937", "link": "#2563EB" },
+  "fonts": { "heading": "Georgia", "body": "Arial" },
+  "fontSizesPt": { "body": 11, "h1": 24 },
+  "page": {
+    "size": "A4",
+    "orientation": "portrait",
+    "footerText": "Acme Ltd · Confidential",
+    "pageNumbers": { "show": true, "position": "footer", "format": "{page} / {pages}" }
+  },
+  "logo": { "available": true, "inDocuments": true, "position": "header-right", "heightCm": 1.2, "format": "png", "widthPx": 600, "heightPx": 200, "source": "org" },
+  "sources": { "companyName": "org", "primaryColor": "user" },
+  "notConfigured": ["secondaryColor", "fontCode", "defaultHeaderText"],
+  "usage": "Apply these values to every document you create …"
 }
 ```
 
-`logoPath` is intentionally omitted (internal filesystem path). To view or change the logo, use `open_companyfiles_ui page="settings"`.
+- `logo.inDocuments` says whether the companyFILES tools put the logo into documents; `logo.position` is `header-left|header-center|header-right|footer-left|footer-center|footer-right`, `logo.heightCm` the height (keep the aspect ratio).
+- `notConfigured` lists settings neither the organization nor the user has set: use neutral defaults there.
+- The companyFILES document tools apply the CI automatically. When you create a document yourself (e.g. with code execution and python-docx, python-pptx or openpyxl), call `get_corporate_ci` first and apply the colors, fonts, sizes, page format, header/footer, page numbers and logo position.
+- The logo's path and image file are not included. To view or change the logo, use `open_companyfiles_ui page="settings"`.
 
 ---
 
@@ -99,5 +111,5 @@ Omitting `topic` (or using `"all"`) returns the full help document and also open
 ## Key Notes
 
 - `open_companyfiles_ui` is the default tool for any request to browse, view, or manage files/templates/settings interactively.
-- Settings colors (`primaryColor`, `secondaryColor`, `accentColor`) are automatically used as the theme in all document and chart creation tools. `get_settings` only returns this core subset; the full settings model holds many more org/user-overridable fields that also feed generated documents — extended colors (`headingColor`, `bodyTextColor`, `linkColor`, `tableHeaderBg`, `tableHeaderText`, `codeBg`), typography (`fontHeading`, `fontBody`, `fontCode`, `fontSize*`), and document defaults (`defaultPageSize`, `defaultPageOrientation`, `defaultHeaderText`, `defaultFooterText`, `defaultShowPageNumbers`, `defaultPageNumberPosition`, `defaultPageNumberFormat`, `logoInHeader`, `logoHeaderHeight`).
+- The CI from the settings automatically feeds all document and chart creation tools: colors (`primaryColor`, `secondaryColor`, `accentColor` and the extended `headingColor`, `bodyTextColor`, `linkColor`, `tableHeaderBg`, `tableHeaderText`, `codeBg`), typography (`fontHeading`, `fontBody`, `fontCode`, `fontSize*`), and document defaults (`defaultPageSize`, `defaultPageOrientation`, `defaultHeaderText`, `defaultFooterText`, `defaultShowPageNumbers`, `defaultPageNumberPosition`, `defaultPageNumberFormat`, `logoInHeader` = logo in documents, `logoPosition`, `logoHeaderHeight`). `get_corporate_ci` returns all of these values at once.
 - To edit settings, use the UI (`open_companyfiles_ui page="settings"`): personal values on **My Settings**, organization values on **Organization**. Changing organization settings and branding requires the companyFILES admin permission (`ext:files:admin`); uploading or promoting global templates requires the template permission (`ext:files:templates`). Users without these permissions manage only their personal settings and templates.

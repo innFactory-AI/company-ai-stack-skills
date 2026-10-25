@@ -167,7 +167,7 @@ For calculations, filters, group-bys, pivots, statistics or charts on an attache
 1. The attachment is in the sandbox at `/mnt/data/<filename>` (check with `os.listdir("/mnt/data")`).
 2. `import pandas` first; if it is missing, use the fallback. Load with `pd.read_excel(path, sheet_name=None)` (all sheets) or `pd.read_csv(path, sep=None, engine="python")`; German exports often need `decimal=","` and `thousands="."`.
 3. Look at shape, columns and dtypes before you compute. Report the figures from the code output, not estimates.
-4. Result as a file: for a formatted workbook in the corporate design, pass the result table to `create_excel_advanced` / `create_excel_from_json`. A file written in the sandbox (save under a new name in `/mnt/data/`, never overwrite the input) comes back as a chat attachment but without the companyFILES theme.
+4. Result as a file: for a formatted workbook in the corporate design, pass the result table to `create_excel_advanced` / `create_excel_from_json`. A file written in the sandbox (save under a new name in `/mnt/data/`, never overwrite the input) comes back as a chat attachment but without the companyFILES CI – if you style it in the sandbox yourself (openpyxl), call `get_corporate_ci` first and apply its font, colours and page format.
 
 **Fallback without code execution:** `read_excel { "librechat_file_id": "<file_id>" }` (per sheet with `sheet_name` for large workbooks), compute from the returned values step by step and show your intermediate figures. For a chart use `show_interactive_chart` / `create_chart_document` (**charts-diagram-skill**). If the file is too large to read completely, say so and analyse a named sheet or range.
 
@@ -177,5 +177,5 @@ For calculations, filters, group-bys, pivots, statistics or charts on an attache
 - `modify_excel` requires a `document_id` or `librechat_file_id` pointing to an `.xlsx` file; it errors if the doc type is not Excel. A chat attachment (`librechat_file_id`) is updated in place when possible — the response then contains `librechat_file_id`, `filename`, `modifications` and `message`, but no download link. Otherwise the modified copy is saved as a new document with a new `id` and `markdownLink`.
 - Sheet names must match the workbook — call `read_excel` first to see them; an unknown name errors with the available sheets.
 - Cell addresses support sheet prefix: `"Sheet2!B3"`.
-- The org/user color theme is automatically applied when configured in settings.
+- The org/user CI is applied automatically when configured in settings: colours, font, page size and orientation, header/footer with page numbers, and the company name in the file properties. Excel gets no logo.
 - To fill a template with `{{placeholder}}` syntax, use `fill_excel_template` from the **templates-skill** instead.

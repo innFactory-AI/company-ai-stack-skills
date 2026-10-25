@@ -183,4 +183,4 @@ Form is **flattened** (read-only) — use for final/archival copies.
 - PDF form templates are personal: they are the user's own templates of type `pdf`. There are no global or admin-managed PDF form templates. The template upload in the companyFILES web UI currently accepts only .docx, .xlsx, .potx and .pptx, so personal PDF form templates can only be added through the REST API — in practice, fill PDFs with `read_pdf_form_fields` + `fill_pdf_form_fields`.
 - When `filename` is omitted on `fill_pdf_form` / `fill_and_flatten_pdf_form`, the output is named `<YYYYMMDD>_<template_name>.pdf`.
 - Field value types: strings for text/dropdown/radio fields, booleans for checkboxes.
-- Org/user color theme is automatically applied when configured.
+- The org/user CI is applied automatically when configured: colours, fonts and sizes, page format, header/footer, page numbers and the logo at the configured position. Fonts not installed on the server render as a fallback of the same kind.

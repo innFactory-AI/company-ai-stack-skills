@@ -1,6 +1,6 @@
 ---
 name: settings-ui-skill
-description: 'Die companyFILES-Web-UI öffnen, Einstellungen anzeigen und Hilfe zu den verfügbaren Tools erhalten. Verwenden, wenn Dokumente angezeigt, Dateien durchsucht, der Dateimanager geöffnet, Vorlagen verwaltet, Einstellungen geändert, Branding/Farben angezeigt oder Hilfe zur Nutzung der companyFILES-Tools gewünscht werden. Auch verwenden, wenn der Benutzer statt rohem JSON eine interaktive eingebettete Ansicht möchte.'
+description: 'Die companyFILES-Web-UI öffnen, Einstellungen anzeigen und Hilfe zu den verfügbaren Tools erhalten. Verwenden, wenn Dokumente angezeigt, Dateien durchsucht, der Dateimanager geöffnet, Vorlagen verwaltet, Einstellungen geändert, Branding/Farben oder die Corporate Identity (CI) angezeigt, die CI für ein selbst erstelltes Dokument (z. B. per Code-Ausführung) gebraucht oder Hilfe zur Nutzung der companyFILES-Tools gewünscht werden. Auch verwenden, wenn der Benutzer statt rohem JSON eine interaktive eingebettete Ansicht möchte.'
 ---
 
 # Einstellungen & UI Skill
@@ -12,7 +12,8 @@ Tools, um die companyFILES-Web-App als eingebettete UI zu öffnen, Einstellungen
 | Tool                   | Zweck                                                                              |
 | ---------------------- | ---------------------------------------------------------------------------------- |
 | `open_companyfiles_ui` | Die companyFILES-Web-App als eingebetteten iframe öffnen                           |
-| `get_settings`         | Aufgelöste Organisations-/Benutzereinstellungen abrufen (Farben, Firmenname, Logo) |
+| `get_corporate_ci`     | Die Corporate Identity (CI) als JSON: Farben, Schriften, Größen, Seitenformat, Kopf-/Fußzeile, Seitenzahlen, Logo |
+| `get_settings`         | Wie `get_corporate_ci` (älterer Name)                                              |
 | `help`                 | Anwendungsbeispiele für jede companyFILES-Tool-Kategorie abrufen                   |
 
 ## Entscheidungshilfe
@@ -24,7 +25,8 @@ Benutzer sagt „eine Datei hochladen“ (über die UI)          → open_compan
 Benutzer sagt „eine Vorlage hochladen“ (über die UI)        → open_companyfiles_ui page="upload"
 Benutzer sagt „Einstellungen öffnen“ / „Präferenzen ändern“ → open_companyfiles_ui page="settings"
 
-Benutzer fragt nach Einstellungen / Farben / Logo           → get_settings
+Benutzer fragt nach CI / Farben / Schriften / Logo          → get_corporate_ci
+Dokument außerhalb der companyFILES-Tools (Code-Interpreter) → zuerst get_corporate_ci, dann die Werte anwenden
 Benutzer fragt, wie ein Tool funktioniert / braucht Beispiele → help (mit topic)
 ```
 
@@ -56,29 +58,39 @@ Die Einstellungsseite enthält keine Spracheinstellung – die Sprache wird im K
 
 ---
 
-### get_settings
+### get_corporate_ci
 
-Liefert die aufgelösten Einstellungen: Organisations-Standards zusammengeführt mit Benutzer-Überschreibungen.
+Liefert die aufgelöste Corporate Identity: die Organisationseinstellungen mit den persönlichen Überschreibungen des Nutzers. `get_settings` liefert dieselbe Antwort (älterer Name).
 
 ```json
 {}
 ```
 
-Beispielantwort:
+Beispielantwort (gekürzt; nur gesetzte Werte erscheinen, Farben mit `#`):
 
 ```json
 {
-  "companyName": "Acme Corp",
-  "companyUrl": "https://acme.com",
-  "primaryColor": "#336699",
-  "secondaryColor": "#66aacc",
-  "accentColor": "#ff6600",
-  "hasLogo": true,
-  "sources": { "companyName": "org", "primaryColor": "user" }
+  "company": { "name": "Acme GmbH", "url": "https://acme.example" },
+  "colors": { "primary": "#336699", "primaryDark": "#264D73", "primaryLight": "#E0E8F0", "heading": "#1F2937", "link": "#2563EB" },
+  "fonts": { "heading": "Georgia", "body": "Arial" },
+  "fontSizesPt": { "body": 11, "h1": 24 },
+  "page": {
+    "size": "A4",
+    "orientation": "portrait",
+    "footerText": "Acme GmbH · Vertraulich",
+    "pageNumbers": { "show": true, "position": "footer", "format": "{page} / {pages}" }
+  },
+  "logo": { "available": true, "inDocuments": true, "position": "header-right", "heightCm": 1.2, "format": "png", "widthPx": 600, "heightPx": 200, "source": "org" },
+  "sources": { "companyName": "org", "primaryColor": "user" },
+  "notConfigured": ["secondaryColor", "fontCode", "defaultHeaderText"],
+  "usage": "Apply these values to every document you create …"
 }
 ```
 
-`logoPath` wird absichtlich weggelassen (interner Dateisystempfad). Um das Logo anzusehen oder zu ändern, verwende `open_companyfiles_ui page="settings"`.
+- `logo.inDocuments` sagt, ob die companyFILES-Tools das Logo in Dokumente setzen; `logo.position` ist `header-left|header-center|header-right|footer-left|footer-center|footer-right`, `logo.heightCm` die Höhe (Seitenverhältnis beibehalten).
+- `notConfigured` nennt Einstellungen, die weder die Organisation noch der Nutzer gesetzt hat: dort neutrale Standards verwenden.
+- Die companyFILES-Dokument-Tools wenden die CI automatisch an. Erstellst du ein Dokument selbst (z. B. mit Code-Ausführung und python-docx, python-pptx oder openpyxl), rufe vorher `get_corporate_ci` auf und übernimm Farben, Schriften, Größen, Seitenformat, Kopf-/Fußzeile, Seitenzahlen und die Logo-Position.
+- Pfad und Bilddatei des Logos sind nicht enthalten. Um das Logo anzusehen oder zu ändern, verwende `open_companyfiles_ui page="settings"`.
 
 ---
 
@@ -99,5 +111,5 @@ Ohne `topic` (oder mit `"all"`) wird das vollständige Hilfedokument zurückgege
 ## Wichtige Hinweise
 
 - `open_companyfiles_ui` ist das Standard-Tool für jede Anfrage, Dateien/Vorlagen/Einstellungen interaktiv zu durchsuchen, anzuzeigen oder zu verwalten.
-- Die Farben aus den Einstellungen (`primaryColor`, `secondaryColor`, `accentColor`) werden automatisch als Theme in allen Tools zur Dokument- und Diagrammerstellung verwendet. `get_settings` liefert nur diese Kernauswahl; das vollständige Einstellungsmodell enthält viele weitere, auf Organisations- oder Benutzerebene überschreibbare Felder, die ebenfalls in erzeugte Dokumente einfließen – erweiterte Farben (`headingColor`, `bodyTextColor`, `linkColor`, `tableHeaderBg`, `tableHeaderText`, `codeBg`), Typografie (`fontHeading`, `fontBody`, `fontCode`, `fontSize*`) und Dokument-Standards (`defaultPageSize`, `defaultPageOrientation`, `defaultHeaderText`, `defaultFooterText`, `defaultShowPageNumbers`, `defaultPageNumberPosition`, `defaultPageNumberFormat`, `logoInHeader`, `logoHeaderHeight`).
+- Die CI aus den Einstellungen fließt automatisch in alle Tools zur Dokument- und Diagrammerstellung ein: Farben (`primaryColor`, `secondaryColor`, `accentColor` und die erweiterten `headingColor`, `bodyTextColor`, `linkColor`, `tableHeaderBg`, `tableHeaderText`, `codeBg`), Typografie (`fontHeading`, `fontBody`, `fontCode`, `fontSize*`) und Dokument-Standards (`defaultPageSize`, `defaultPageOrientation`, `defaultHeaderText`, `defaultFooterText`, `defaultShowPageNumbers`, `defaultPageNumberPosition`, `defaultPageNumberFormat`, `logoInHeader` = Logo in Dokumenten, `logoPosition`, `logoHeaderHeight`). `get_corporate_ci` liefert alle diese Werte auf einmal.
 - Zum Bearbeiten der Einstellungen verwende die UI (`open_companyfiles_ui page="settings"`): persönliche Werte unter **Meine Einstellungen**, Organisationswerte unter **Organisation**. Das Ändern von Organisationseinstellungen und Branding erfordert die companyFILES-Admin-Berechtigung (`ext:files:admin`); das Hochladen oder Hochstufen globaler Vorlagen erfordert die Vorlagen-Berechtigung (`ext:files:templates`). Benutzer ohne diese Berechtigungen verwalten nur ihre persönlichen Einstellungen und Vorlagen.

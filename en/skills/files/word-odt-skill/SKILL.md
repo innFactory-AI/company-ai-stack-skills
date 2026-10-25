@@ -197,4 +197,4 @@ All three in-place tools (`read_word_content`, `append_to_word`, `replace_word_c
 - Unset page/header/footer options fall back to the org/user theme defaults (e.g. `defaultPageSize`, `defaultHeaderText`, `defaultShowPageNumbers`) before the documented hard defaults apply.
 - For template-based Word creation (placeholders, loops, image injection), use the **templates-skill**.
 - ODT files open natively in LibreOffice and Google Docs.
-- Org/user color theme is automatically applied when configured.
+- The org/user CI is applied automatically when configured: colours, fonts and sizes, page format, header/footer, page numbers and the logo at the configured position (header or footer, left/center/right). For a document you build yourself with code execution, `get_corporate_ci` returns the same values.

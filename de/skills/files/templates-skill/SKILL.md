@@ -285,10 +285,11 @@ Hängt eine Kopie einer Vorlage (persönlich oder global) als Datei an den aktue
 #### Wenn Code-Ausführung verfügbar ist: Vorlage mit Python bearbeiten
 
 1. Prüfe, ob die Datei da ist (`/mnt/data/`) und die Bibliothek lädt (`import docx` / `openpyxl` / `pptx`).
-2. Ändere Text innerhalb der vorhandenen Runs/Zellen, damit das Layout bleibt; überschreibe nie die Eingabe — speichere das Ergebnis unter neuem Namen in `/mnt/data/`, es kommt als Chat-Anhang zurück.
-3. Öffne das Ergebnis erneut und prüfe auf übrig gebliebene Platzhalter, bevor du Erfolg meldest.
+2. Fügst du neue Inhalte hinzu (Abschnitte, Tabellen, Folien), die die Vorlage nicht gestaltet, rufe vorher `get_corporate_ci` auf und übernimm Farben, Schriften und Größen der CI; wo die Vorlage Stile vorgibt, bleibt die Vorlage maßgeblich.
+3. Ändere Text innerhalb der vorhandenen Runs/Zellen, damit das Layout bleibt; überschreibe nie die Eingabe — speichere das Ergebnis unter neuem Namen in `/mnt/data/`, es kommt als Chat-Anhang zurück.
+4. Öffne das Ergebnis erneut und prüfe auf übrig gebliebene Platzhalter, bevor du Erfolg meldest.
 
-Das ausführliche Rezept (Code für Word, Excel, PowerPoint, Stolperfallen wie verlorene Diagramme bei openpyxl) steht in der mitgelieferten Datei `references/code-template-editing.md` — lies sie mit dem eingebauten `read_file`-Tool, Pfad `templates-skill/references/code-template-editing.md` (nicht das gleichnamige companyFILES-Tool). Sie ist nur vorhanden, wenn dieser Skill als Paket (zip) installiert wurde; wurde nur `SKILL.md` eingefügt, nutze die drei Schritte oben.
+Das ausführliche Rezept (Code für Word, Excel, PowerPoint, Stolperfallen wie verlorene Diagramme bei openpyxl) steht in der mitgelieferten Datei `references/code-template-editing.md` — lies sie mit dem eingebauten `read_file`-Tool, Pfad `templates-skill/references/code-template-editing.md` (nicht das gleichnamige companyFILES-Tool). Sie ist nur vorhanden, wenn dieser Skill als Paket (zip) installiert wurde; wurde nur `SKILL.md` eingefügt, nutze die vier Schritte oben.
 
 **Ohne Code-Ausführung** (oder wenn Datei oder Bibliothek fehlen): Fülle die Vorlage mit den `create_*_from_template`-Tools oben aus und verfeinere das Ergebnis mit den iterativen Tools unten (`append_to_word`, `replace_word_content`, `append_slides_to_powerpoint` mit `reference_slide`, `modify_excel`). Für ODT gibt es in der Standard-Sandbox keine Python-Bibliothek: nimm `create_odt_from_template`.
 

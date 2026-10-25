@@ -614,11 +614,13 @@ the keys still free. Pass `include_layouts: false` for a text-only read of a ver
   attachment updated in place, the response carries `librechat_file_id`, `filename` and `message`
   but **no** download link — tell the user the attached deck was updated. If the attachment could
   not be updated in place, a new document with its own `id` and `markdownLink` is returned.
-- **Theming (path A/B):** the org/user colour theme is applied automatically from settings; no
-  theme arguments needed. **No logo is placed automatically** by any PowerPoint tool. In path B
-  only `{{company_name}}` is auto-filled (from the company name in settings); a logo needs a
-  `{%logo}` image placeholder and an explicit `images` entry. Logo auto-injection exists only for
-  the Word template tools.
+- **Theming (path A):** `create_powerpoint` applies the CI from the settings automatically: colours,
+  theme fonts, link colour, the company name in the file properties and – on content slides – footer
+  text, slide number and the logo (when "logo in documents" is on, at the slide edge of the configured
+  logo position; title and section slides stay without). No theme arguments needed.
+- **Path B (templates):** only `{{company_name}}` is auto-filled (from the company name in settings);
+  a logo needs a `{%logo}` image placeholder and an explicit `images` entry. Path C writes no
+  formatting; the template defines the look.
 
 ---
 
