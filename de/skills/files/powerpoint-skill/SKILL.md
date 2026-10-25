@@ -212,6 +212,9 @@ Jeder Typ akzeptiert zusätzlich `notes` (Sprechernotizen). Unbekannte `type`-We
 `"default"` zurück. Fehlt `image` auf einer `text-image`-Folie, wird ein Skelett-Platzhalterkasten
 gezeichnet – nützlich für Entwürfe.
 
+**Titel bleiben einzeilig** (Inhalts-, Titel- und Abschnittsfolien): Ein langer Titel wird kleiner gesetzt (bis
+16 pt), einer mit mehr als etwa 60 Zeichen mit „…“ gekürzt. Halte Folientitel kurz und stell Details in den Inhalt.
+
 ```json
 {
   "slides": [

@@ -205,6 +205,9 @@ Pass `slides` instead of `markdown`. When both are given, `slides` wins.
 Every type also accepts `notes` (speaker notes). Unknown `type` values fall back to `"default"`.
 Omitting `image` on a `text-image` slide draws a skeleton placeholder box — useful for drafts.
 
+**Titles stay on one line** (content, title and section slides): a long title is set smaller (down to 16 pt), and one
+over about 60 characters is cut with "…". Keep slide titles short and put details in the content.
+
 ```json
 {
   "slides": [
