@@ -197,4 +197,4 @@ Alle drei direkt arbeitenden Tools (`read_word_content`, `append_to_word`, `repl
 - Nicht gesetzte Seiten-/Kopf-/Fußzeilenoptionen greifen auf die Theme-Standards der Organisation bzw. des Benutzers zurück (z. B. `defaultPageSize`, `defaultHeaderText`, `defaultShowPageNumbers`), bevor die dokumentierten festen Standardwerte gelten.
 - Für vorlagenbasierte Word-Erstellung (Platzhalter, Schleifen, Bildeinfügung) verwende den **templates-skill**.
 - ODT-Dateien lassen sich nativ in LibreOffice und Google Docs öffnen.
-- Das Farbschema der Organisation bzw. des Benutzers wird automatisch angewendet, wenn es konfiguriert ist.
+- Die CI der Organisation bzw. des Benutzers wird automatisch angewendet, wenn sie konfiguriert ist: Farben, Schriften und Größen, Seitenformat, Kopf-/Fußzeile, Seitenzahlen und das Logo an der eingestellten Position (Kopf- oder Fußzeile, links/Mitte/rechts). Für ein Dokument, das du selbst per Code-Ausführung baust, liefert `get_corporate_ci` dieselben Werte.

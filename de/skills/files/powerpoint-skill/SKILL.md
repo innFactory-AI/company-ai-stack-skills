@@ -635,11 +635,13 @@ Foliensatzes (nur `slideNumber`, `title`, `textLines`).
   `librechat_file_id`, `filename` und `message`, aber **keinen** Download-Link – teile dem Nutzer mit,
   dass der angehängte Foliensatz aktualisiert wurde. Konnte der Anhang nicht direkt aktualisiert
   werden, wird ein neues Dokument mit eigener `id` und eigenem `markdownLink` zurückgegeben.
-- **Theming (Weg A/B):** Das Farbtheme der Organisation/des Nutzers wird automatisch aus den
-  Einstellungen übernommen; Theme-Argumente sind nicht nötig. **Kein PowerPoint-Tool platziert
-  automatisch ein Logo.** In Weg B wird nur `{{company_name}}` automatisch befüllt (aus dem Firmennamen
-  in den Einstellungen); ein Logo braucht einen `{%logo}`-Bildplatzhalter und einen expliziten
-  `images`-Eintrag. Automatisches Einfügen des Logos gibt es nur bei den Word-Vorlagen-Tools.
+- **Theming (Weg A):** `create_powerpoint` übernimmt die CI automatisch aus den Einstellungen: Farben,
+  Theme-Schriften, Linkfarbe, Firmenname in den Dateieigenschaften und – auf Inhaltsfolien – Fußzeilentext,
+  Foliennummer und das Logo (wenn „Logo in Dokumenten“ an ist, an der Folienkante der eingestellten
+  Logo-Position; Titel- und Abschnittsfolien bleiben ohne). Theme-Argumente sind nicht nötig.
+- **Weg B (Vorlagen):** Nur `{{company_name}}` wird automatisch befüllt (aus dem Firmennamen in den
+  Einstellungen); ein Logo braucht einen `{%logo}`-Bildplatzhalter und einen expliziten `images`-Eintrag.
+  Weg C schreibt keine Formatierung, die Vorlage bestimmt das Aussehen.
 
 ---
 

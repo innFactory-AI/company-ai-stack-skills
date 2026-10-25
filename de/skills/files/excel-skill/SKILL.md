@@ -167,7 +167,7 @@ Für Berechnungen, Filter, Gruppierungen, Pivots, Statistik oder Diagramme auf e
 1. Der Anhang liegt in der Sandbox unter `/mnt/data/<dateiname>` (prüfen mit `os.listdir("/mnt/data")`).
 2. Zuerst `import pandas`; fehlt es, nimm die Alternative. Laden mit `pd.read_excel(pfad, sheet_name=None)` (alle Blätter) oder `pd.read_csv(pfad, sep=None, engine="python")`; deutsche Exporte brauchen oft `decimal=","` und `thousands="."`.
 3. Sieh dir Form, Spalten und Datentypen an, bevor du rechnest. Berichte die Zahlen aus der Code-Ausgabe, keine Schätzungen.
-4. Ergebnis als Datei: Für eine formatierte Arbeitsmappe im Corporate Design übergib die Ergebnistabelle an `create_excel_advanced` / `create_excel_from_json`. Eine in der Sandbox geschriebene Datei (unter neuem Namen in `/mnt/data/` speichern, nie die Eingabe überschreiben) kommt als Chat-Anhang zurück, aber ohne das companyFILES-Farbschema.
+4. Ergebnis als Datei: Für eine formatierte Arbeitsmappe im Corporate Design übergib die Ergebnistabelle an `create_excel_advanced` / `create_excel_from_json`. Eine in der Sandbox geschriebene Datei (unter neuem Namen in `/mnt/data/` speichern, nie die Eingabe überschreiben) kommt als Chat-Anhang zurück, aber ohne die companyFILES-CI – gestaltest du sie in der Sandbox selbst (openpyxl), rufe vorher `get_corporate_ci` auf und übernimm Schrift, Farben und Seitenformat.
 
 **Ohne Code-Ausführung:** `read_excel { "librechat_file_id": "<file_id>" }` (bei großen Arbeitsmappen je Blatt mit `sheet_name`), aus den gelieferten Werten Schritt für Schritt rechnen und die Zwischenergebnisse zeigen. Für ein Diagramm `show_interactive_chart` / `create_chart_document` (**charts-diagram-skill**). Ist die Datei zu groß, um sie vollständig zu lesen, sag das und werte ein benanntes Blatt oder einen Bereich aus.
 
@@ -177,5 +177,5 @@ Für Berechnungen, Filter, Gruppierungen, Pivots, Statistik oder Diagramme auf e
 - `modify_excel` benötigt eine `document_id` oder `librechat_file_id`, die auf eine `.xlsx`-Datei zeigt; ist der Dokumenttyp nicht Excel, gibt es einen Fehler. Ein Chat-Anhang (`librechat_file_id`) wird nach Möglichkeit direkt aktualisiert – die Antwort enthält dann `librechat_file_id`, `filename`, `modifications` und `message`, aber keinen Download-Link. Andernfalls wird die geänderte Kopie als neues Dokument mit neuer `id` und `markdownLink` gespeichert.
 - Blattnamen müssen zur Arbeitsmappe passen – rufe zuerst `read_excel` auf, um sie zu sehen; ein unbekannter Name führt zu einem Fehler, der die vorhandenen Blätter auflistet.
 - Zelladressen unterstützen ein Blatt-Präfix: `"Sheet2!B3"`.
-- Das Farbschema der Organisation bzw. des Benutzers wird automatisch angewendet, wenn es in den Einstellungen konfiguriert ist.
+- Die CI der Organisation bzw. des Benutzers wird automatisch angewendet, wenn sie in den Einstellungen konfiguriert ist: Farben, Schrift, Seitenformat und -ausrichtung, Kopf-/Fußzeile mit Seitenzahlen und der Firmenname in den Dateieigenschaften. Ein Logo setzt Excel nicht.
 - Um eine Vorlage mit `{{placeholder}}`-Syntax auszufüllen, verwende stattdessen `fill_excel_template` aus dem **templates-skill**.
