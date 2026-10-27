@@ -13,6 +13,10 @@ Alle Tools stammen vom companyRAG-MCP-Server (Standardname **ai-search**). Gib `
 
 Die Ergebnisse sind nach den Dokumentberechtigungen des Benutzers gefiltert. Verschiedene Benutzer können also unterschiedliche Treffer sehen.
 
+### list_collections
+
+Listet die Collections, auf die der Benutzer Zugriff hat, mit exaktem `name`, Typ, Beschreibung und den jeweils passenden Tools. Keine Parameter. Rufe es auf, wenn `<deine-collection>` nicht durch einen echten Namen ersetzt wurde, wenn ein Tool meldet, dass die Collection nicht existiert oder kein Zugriff besteht, oder wenn der Benutzer fragt, welche Wissensdatenbanken es gibt. Verwende dann genau einen der gelisteten Namen als `collection`. Auf einem fest eingestellten Server listet es nur dessen Collection.
+
 ### search_content (Standard-Tool)
 
 Semantische, Volltext- oder hybride Suche über die Collection.
@@ -108,5 +112,5 @@ companyRAG kann keine Dateien indexieren, die der Nutzer im Chat anhängt; `sear
 2. **Nur belegte Inhalte.** Verwende ausschließlich Informationen aus den Tool-Ergebnissen. Lücken benennst du offen.
 3. **Zitieren.** Referenziere Quellen inline als `[[1]](url)` und liste sie am Ende unter „Referenzen". Als Link verwendest du den `[Download Link]`, sonst ein `url`- bzw. `source_url`-Feld oder einen `[Source]`, der selbst eine URL ist. Gibt es keinen Link, nennst du den Quellennamen ohne Link (und die Seite aus `pageNumber`, falls vorhanden). Erfinde nie URLs.
 4. **Erneut versuchen.** Ohne brauchbare Treffer: Begriffe umformulieren, `topK` erhöhen oder auf `hybrid` bzw. `keyword` wechseln. Höchstens 4 Suchen pro Frage.
-5. **Tool-Fehler respektieren.** Enthält eine Fehlermeldung „Nicht erneut versuchen" (z. B. fehlender Zugriff auf die Collection), wiederholst du den Aufruf nicht, sondern gibst den Hinweis an den Benutzer weiter. Nennt die Meldung verfügbare Collections, verwende genau einen dieser Namen. Meldet das Tool, dass die Collection nur Tabellen enthält, verweise auf die Dataset-Tools (`list_datasets`, `get_schema`, `execute_sql`).
+5. **Tool-Fehler respektieren.** Enthält eine Fehlermeldung „Nicht erneut versuchen" (z. B. fehlender Zugriff auf die Collection), wiederholst du den Aufruf nicht, sondern gibst den Hinweis an den Benutzer weiter. Nennt die Meldung verfügbare Collections, verwende genau einen dieser Namen; sonst prüfe den Namen mit `list_collections`. Meldet das Tool, dass die Collection nur Tabellen enthält, verweise auf die Dataset-Tools (`list_datasets`, `get_schema`, `execute_sql`).
 6. **Sauber scheitern.** Danach sagst du klar: „Ich konnte dazu keine Informationen in der Wissensdatenbank finden."
