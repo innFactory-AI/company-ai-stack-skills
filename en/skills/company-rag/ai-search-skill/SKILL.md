@@ -13,6 +13,10 @@ All tools come from the companyRAG MCP server (default name **ai-search**). Pass
 
 Results are filtered by the user's document permissions, so different users may see different hits.
 
+### list_collections
+
+Lists the collections the user can access, with the exact `name`, type, description, and the tools that fit each one. No parameters. Call it when `<your-collection>` was not replaced with a real name, when a tool reports that the collection does not exist or is not accessible, or when the user asks which knowledge bases are available. Then use exactly one of the listed names as `collection`. On a server pinned to one collection, it lists only that one.
+
 ### search_content (default tool)
 
 Semantic, full-text, or hybrid search across the collection.
@@ -108,5 +112,5 @@ companyRAG cannot index files the user attaches in the chat; `search_content` on
 2. **Only sourced content.** Use exclusively information from the tool results. State gaps openly.
 3. **Cite.** Reference sources inline as `[[1]](url)` and list them under "References" at the end. Use the `[Download Link]` as the link, otherwise a `url` or `source_url` field, or a `[Source]` that is itself a URL. Without a link, name the source without a link (plus the page from `pageNumber` if present). Never invent URLs.
 4. **Retry.** Without usable hits: rephrase the terms, raise `topK`, or switch to `hybrid` or `keyword`. At most 4 searches per question.
-5. **Respect tool errors.** If an error message says not to retry (German: "Nicht erneut versuchen", e.g. no access to the collection), do not repeat the call; pass the notice on to the user. If the message lists available collections, use exactly one of those names. If the tool reports that the collection only holds tables, point to the dataset tools (`list_datasets`, `get_schema`, `execute_sql`).
+5. **Respect tool errors.** If an error message says not to retry (German: "Nicht erneut versuchen", e.g. no access to the collection), do not repeat the call; pass the notice on to the user. If the message lists available collections, use exactly one of those names; otherwise check the name with `list_collections`. If the tool reports that the collection only holds tables, point to the dataset tools (`list_datasets`, `get_schema`, `execute_sql`).
 6. **Fail cleanly.** After that, say plainly: "I could not find any information about this in the knowledge base."
