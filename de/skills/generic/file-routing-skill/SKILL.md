@@ -35,6 +35,7 @@ Prüfe deine Tool-Liste, bevor du einen Weg wählst. Apps (companyFILES, company
 | Diagramm aus angehängten Daten | Code-Ausführung (matplotlib/plotly) **oder** companyFILES `show_interactive_chart` (im Chat) / `create_chart_document` (im Dokument) | Ohne Code-Ausführung: Werte mit `read_excel` lesen, dann die companyFILES-Diagramm-Tools |
 | Firmenvorlage ausfüllen | companyFILES `list_templates` + `create_*_from_template` (Vorlagen-Skill) | — |
 | Massen- oder freie Änderungen im Layout einer Vorlage | companyFILES `attach_template_to_chat`, dann Code-Ausführung ab der **nächsten** Nachricht des Nutzers (Vorlagen-Skill) | Braucht Code-Ausführung und LibreChat-Dateispeicher für companyFILES; sonst `create_*_from_template` plus die iterativen Bearbeitungstools |
+| Ein angehängtes Firmen-Deck oder Word-Dokument mit Blindtext („Text“, „XXX“, „[Kunde]“), aber ohne `{{Platzhalter}}` befüllen | Code-Ausführung mit den Skripten aus dem PowerPoint-Skill (Weg D) oder dem Word-Skill | Ohne Code-Ausführung gibt es kein Tool dafür: sag das und biete die Optionen aus diesen Skills an; liefere nie leere Folien oder Folien mit Blindtext als fertig aus |
 | Angehängte Excel-, Word- oder PowerPoint-Datei bearbeiten | companyFILES `modify_excel`, `append_to_word`/`replace_word_content`, PowerPoint-Bearbeitungstools mit `librechat_file_id` | Mit Code-Ausführung auch in der Sandbox möglich (als neue Datei speichern) |
 | E-Mails (`.msg`, `.eml`), ZIP-Archive, Altformate (`.doc`, `.xls`, `.ppt`, RTF, ODF), gescannte PDFs | companyFILES `read_file` / `save_file_part` / `convert_to_markdown` | Nur, wenn sie in deiner Tool-Liste stehen; sonst um einen PDF- oder DOCX-Export bitten |
 | Zwischen Formaten konvertieren | companyFILES `convert_document` (Konvertierungs-Skill) | — |
@@ -52,7 +53,8 @@ Nutze sie für Berechnungen auf angehängten Daten, Diagramme als Bild und Masse
 
 - Im Chat angehängte Dateien liegen in der Sandbox unter `/mnt/data/<dateiname>`. Prüfe zuerst mit `os.listdir("/mnt/data")`.
 - Die Sandbox hat keinen Netzwerkzugriff: keine Downloads, keine API-Aufrufe, kein `pip install`.
-- Prüfe eine Bibliothek per `import`, bevor du dich auf sie verlässt (meist vorhanden: pandas, numpy, openpyxl, python-docx, python-pptx, matplotlib, plotly). Fehlt eine, nimm die Alternative.
+- Prüfe eine Bibliothek per `import`, bevor du dich auf sie verlässt (meist vorhanden: pandas, numpy, openpyxl, xlsxwriter, python-docx, python-pptx, matplotlib, plotly, Pillow, reportlab, PyPDF2, pdfminer.six; dazu `pdftoppm`/`pdftotext`). Nicht vorhanden: LibreOffice (kein Rendern von DOCX/PPTX als PDF oder Bild), pdfplumber, das neuere `pypdf`. Fehlt eine, nimm die Alternative.
+- Jeder Aufruf läuft höchstens etwa 15 Sekunden; nur `/mnt/data` bleibt zwischen Aufrufen erhalten (`/tmp`, Variablen und das Arbeitsverzeichnis nicht).
 - Speichere Ergebnisse unter neuem Namen in `/mnt/data/`; sie kommen als Chat-Anhänge zurück. Überschreibe nie die Eingabe.
 - Rechne im Code, nicht im Kopf, und berichte die Zahlen aus der Code-Ausgabe.
 - Für ein formatiertes XLSX/DOCX/PPTX im Corporate Design nimm lieber companyFILES (oder den Vorlagen-Weg) als eine im Code neu gebaute Datei.

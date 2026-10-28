@@ -34,7 +34,12 @@ for m in ("docx", "openpyxl", "pptx"):
 
 `docx` = python-docx, `openpyxl`, `pptx` = python-pptx. Fehlt die benötigte, weiche auf die Vorlagen-Tools aus. Für
 ODT gibt es in der Standard-Sandbox keine Bibliothek (`import odf` schlägt meist fehl): nimm für ODT
-`create_odt_from_template`.
+`create_odt_from_template`. LibreOffice gibt es in der Sandbox auch nicht, sie kann also kein Dokument als PDF oder
+Bild rendern.
+
+Für eine Vorlage ohne `{{}}`, deren Inhalt als Blindtext in Textfeldern, Musterfolien, Inhaltssteuerelementen oder
+Musterzeilen steht, nimm statt selbst geschriebenem Ersetzungscode die Skripte aus dem **powerpoint-skill** (Weg D,
+`pptx_inventory.py` / `pptx_fill.py`) und dem **word-odt-skill** (`docx_inventory.py` / `docx_fill.py`).
 
 ## 3. Regeln
 
@@ -177,5 +182,7 @@ slide.placeholders[1].text_frame.text = "Verantwortlich: PMO"   # idx aus der Li
 prs.save("/mnt/data/<ergebnis>.pptx")
 ```
 
-python-pptx hat keine Funktion „Folie duplizieren“; baue neue Folien aus Layouts oder nutze für Klonen und
+python-pptx hat keine Funktion „Folie duplizieren“. Baue neue Folien aus Layouts oder nutze für Klonen und
 Neubefüllen die companyFILES-Tools (`append_slides_to_powerpoint` mit `reference_slide`, `add_slides_from_layouts`).
+Um Musterfolien mit einfachen Textfeldern (samt Bildern und Diagrammen) zu kopieren, nimm `pptx_fill.py` aus dem
+**powerpoint-skill**.

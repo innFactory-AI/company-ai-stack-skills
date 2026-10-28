@@ -1,6 +1,6 @@
 ---
 name: word-odt-skill
-description: 'Create and read Word (.docx) and ODT (.odt) documents with companyFILES MCP tools. Use when asked to write a report, letter, or document in Word or OpenDocument format, convert Markdown or HTML to Word/ODT, extract text from a Word file, or create a document with headers, footers, table of contents, or page numbers.'
+description: 'Create and read Word (.docx) and ODT (.odt) documents with companyFILES MCP tools. Use when asked to write a report, letter, or document in Word or OpenDocument format, convert Markdown or HTML to Word/ODT, extract text from a Word file, or create a document with headers, footers, table of contents, or page numbers. Also fills a corporate Word document or form that has no {{placeholders}} (sample text, text boxes, content controls, tables) with code execution.'
 ---
 
 # Word & ODT Skill
@@ -43,6 +43,11 @@ User wants to EDIT an existing stored Word document...
   Inspect current content first       → read_word_content
   Add more content at the end         → append_to_word    (keeps existing content)
   Rewrite the whole document          → replace_word_content
+
+User wants to FILL a corporate document / form in its own layout...
+  It has {{placeholders}}             → see templates-skill (create_word_from_template)
+  No {{}}: sample text, text boxes,   → "Filling a corporate document without {{placeholders}}"
+  content controls, empty tables         below (code execution)
 ```
 
 ## Tool Usage
@@ -188,6 +193,95 @@ For long documents that exceed a single context window, build them section by se
 4. `replace_word_content` — if a section needs to be fully rewritten
 
 All three in-place tools (`read_word_content`, `append_to_word`, `replace_word_content`) operate on existing documents identified by `document_id` **or** `librechat_file_id` (a LibreChat attachment, updated in-place on the shared volume), not on base64 file content.
+
+## Filling a corporate document without `{{placeholders}}`
+
+A letterhead, offer template, form or report template the user attached usually has no
+`{{placeholders}}`. Instead it has sample text ("[Kunde]", "XXX", "Lorem ipsum", "Max Mustermann"),
+text boxes, content controls ("Klicken oder tippen Sie hier, um Text einzugeben."), checkboxes and
+tables with an empty sample row. `replace_word_content` and `append_to_word` cannot fill such a
+document. They rewrite it in the companyFILES layout or append to its end, so the layout the user
+wanted is lost. Do not use them for this.
+
+### If code execution is available
+
+The document is in the sandbox at `/mnt/data/<filename>.docx`. This skill ships two scripts,
+under `/mnt/data/skills/word-odt-skill/scripts/` when it was installed as a package:
+
+1. **Inventory**:
+
+   ```bash
+   python3 /mnt/data/skills/word-odt-skill/scripts/docx_inventory.py "/mnt/data/<doc>.docx"
+   ```
+
+   It lists every non-empty paragraph with a key: `B12` (body), `H1.0` / `F1.2` (header/footer),
+   the table cell (`[T0r1c2]`), `textbox`, style. It lists tables (`BT0: 3 rows x 3 cols`) and
+   content controls with tag/title, type and whether they still show their placeholder. `!DUMMY`
+   marks sample text. Long documents: `--range B0-B150`; empty paragraphs: `--all`.
+
+2. **Fill**: plan and output in one call:
+
+   ```bash
+   cat > /tmp/plan.json <<'EOF'
+   {
+     "paragraphs": {"B2": "Thank you for your enquiry.", "B3": ["Consulting", "Implementation", "Training"],
+                    "B18": "Erika Example", "B20": null, "H1.0": "Acme Corp | Offer 2026-117"},
+     "tables": {"BT0": {"start_row": 1, "rows": [["Consulting", "2", "2,400 EUR"], ["Training", "1", "900 EUR"]], "trim": true}},
+     "content_controls": {"Customer": "Acme Corp", "Approved": true},
+     "replace": {"[Kunde]": "Acme Corp"}
+   }
+   EOF
+   python3 /mnt/data/skills/word-odt-skill/scripts/docx_fill.py "/mnt/data/<doc>.docx" /tmp/plan.json "/mnt/data/<result>.docx"
+   ```
+
+   - `paragraphs`: key → text. A list or `\n` adds paragraphs in the same style (e.g. more
+     bullets), `<br>` is a line break, `null` deletes the paragraph. Images and text boxes anchored
+     in a paragraph stay.
+   - `tables`: fills rows from `start_row` (0 = header). More rows than the table has copy its
+     last row with its formatting. `null` keeps a cell, and `trim` removes unused sample rows.
+   - `content_controls`: by tag or title. `true`/`false` ticks a checkbox. The placeholder style
+     ("Klicken oder tippen…") is removed.
+   - `replace`: substring everywhere: body, tables, text boxes, headers, footers.
+   - Text boxes are updated in both copies Word stores (otherwise older viewers show the old
+     text). Formatting comes from the paragraph and its first run.
+   - Keys always refer to the **source** document. The script resolves all of them before it
+     changes anything. Write the plan to `/tmp` in the same call, because files in `/mnt/data`
+     become chat attachments.
+
+3. **Check**: the fill script ends with a check (exit code 2 and `CHECK FAILED` if sample text
+   or a content-control placeholder is left). `docx_inventory.py "<result>" --check` checks on its
+   own. Deliberately empty fields (a signature line) are fine; name them in the answer.
+
+4. **Answer**: the result comes back as a chat attachment. Name what you filled and what stays
+   for the user to fill. You can only check the text, not the page layout. Ask the user to check
+   line and page breaks.
+
+**Without the scripts** (only `SKILL.md` was pasted): use python-docx (`import docx` first).
+
+- Walk all paragraphs, including table cells, text boxes (`w:txbxContent`), headers and footers.
+- Change text in the existing runs; setting `paragraph.text` wipes the formatting.
+- Copy a table row with `copy.deepcopy(row._tr)`.
+- Content controls are `w:sdt` elements. Remove `w:showingPlcHdr` after filling one.
+- See **templates-skill** (`references/code-template-editing.md`) for the run-level replace recipe.
+
+**Limits:**
+
+- The sandbox has no LibreOffice, so there is no render and no PDF export of the result. For a
+  PDF, use `convert_document` (convert skill) on the finished DOCX if it is available.
+- ODT has no Python library in the sandbox.
+- Legacy form fields (`FORMTEXT`) and tracked changes are not handled; say so if the document
+  uses them.
+
+### Without code execution
+
+No tool fills such a document in its own layout. Tell the user plainly, and offer:
+
+- Turn on code execution (chat/agent setting or the `RUN_CODE` permission from an admin).
+- Make the document a real template once: replace the sample text with `{{placeholders}}` in
+  Word and upload it as a template. After that, `create_word_from_template` fills it without code
+  (templates-skill).
+- The filled-in texts as a list to paste in, or a new document with `create_word` in the
+  companyFILES/CI design, clearly labelled as not their template.
 
 ## Key Notes
 

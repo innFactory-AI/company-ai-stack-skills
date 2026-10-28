@@ -1,6 +1,6 @@
 ---
 name: word-odt-skill
-description: 'Create and read Word (.docx) and ODT (.odt) documents with companyFILES MCP tools. Use when asked to write a report, letter, or document in Word or OpenDocument format, convert Markdown or HTML to Word/ODT, extract text from a Word file, or create a document with headers, footers, table of contents, or page numbers.'
+description: 'Erstellt und liest Word- (.docx) und ODT-Dokumente (.odt) mit companyFILES MCP-Tools. Verwenden, wenn ein Bericht, Brief oder Dokument im Word- oder OpenDocument-Format geschrieben, Markdown oder HTML in Word/ODT umgewandelt, Text aus einer Word-Datei gelesen oder ein Dokument mit Kopf- und Fußzeilen, Inhaltsverzeichnis oder Seitenzahlen erstellt werden soll. Befüllt außerdem ein Firmendokument oder Formular ohne {{Platzhalter}} (Blindtext, Textfelder, Inhaltssteuerelemente, Tabellen) per Code-Ausführung.'
 ---
 
 # Word & ODT Skill
@@ -43,6 +43,11 @@ Nutzer möchte ein vorhandenes gespeichertes Word-Dokument BEARBEITEN...
   Zuerst aktuellen Inhalt prüfen          → read_word_content
   Weiteren Inhalt am Ende anfügen         → append_to_word    (behält vorhandenen Inhalt)
   Gesamtes Dokument neu schreiben         → replace_word_content
+
+Nutzer möchte ein Firmendokument / Formular in seinem eigenen Layout BEFÜLLEN...
+  Es hat {{Platzhalter}}                  → siehe templates-skill (create_word_from_template)
+  Kein {{}}: Blindtext, Textfelder,       → „Firmendokument ohne {{Platzhalter}} befüllen“
+  Inhaltssteuerelemente, leere Tabellen      unten (Code-Ausführung)
 ```
 
 ## Verwendung der Tools
@@ -188,6 +193,100 @@ Lange Dokumente, die ein einzelnes Kontextfenster übersteigen, baust du abschni
 4. `replace_word_content` — falls ein Abschnitt komplett neu geschrieben werden muss
 
 Alle drei direkt arbeitenden Tools (`read_word_content`, `append_to_word`, `replace_word_content`) arbeiten mit vorhandenen Dokumenten, die per `document_id` **oder** `librechat_file_id` (ein LibreChat-Anhang, der direkt auf dem gemeinsamen Volume aktualisiert wird) identifiziert werden, nicht mit base64-Dateiinhalt.
+
+## Firmendokument ohne `{{Platzhalter}}` befüllen
+
+Ein Briefbogen, eine Angebotsvorlage, ein Formular oder eine Berichtsvorlage, die der Nutzer anhängt,
+hat meist keine `{{Platzhalter}}`. Stattdessen gibt es Blindtext („[Kunde]“, „XXX“, „Lorem ipsum“,
+„Max Mustermann“), Textfelder, Inhaltssteuerelemente („Klicken oder tippen Sie hier, um Text
+einzugeben.“), Kontrollkästchen und Tabellen mit einer leeren Musterzeile. `replace_word_content` und
+`append_to_word` können so ein Dokument nicht befüllen. Sie schreiben es im companyFILES-Layout neu
+oder hängen am Ende an, und das gewünschte Layout geht verloren. Nutze sie dafür nicht.
+
+### Wenn Code-Ausführung verfügbar ist
+
+Das Dokument liegt in der Sandbox unter `/mnt/data/<dateiname>.docx`. Dieser Skill bringt zwei Skripte
+mit, unter `/mnt/data/skills/word-odt-skill/scripts/`, wenn er als Paket installiert wurde:
+
+1. **Inventur**:
+
+   ```bash
+   python3 /mnt/data/skills/word-odt-skill/scripts/docx_inventory.py "/mnt/data/<dokument>.docx"
+   ```
+
+   Sie listet jeden nicht leeren Absatz mit einem Key auf: `B12` (Hauptteil), `H1.0` / `F1.2`
+   (Kopf-/Fußzeile), die Tabellenzelle (`[T0r1c2]`), `textbox`, Formatvorlage. Dazu Tabellen
+   (`BT0: 3 rows x 3 cols`) und Inhaltssteuerelemente mit Tag/Titel, Typ und ob sie noch ihren
+   Platzhalter zeigen. `!DUMMY` markiert Blindtext. Lange Dokumente: `--range B0-B150`; leere Absätze:
+   `--all`.
+
+2. **Befüllen**: Plan und Ausgabe in einem Aufruf:
+
+   ```bash
+   cat > /tmp/plan.json <<'EOF'
+   {
+     "paragraphs": {"B2": "vielen Dank für Ihre Anfrage.", "B3": ["Beratung", "Implementierung", "Schulung"],
+                    "B18": "Erika Beispiel", "B20": null, "H1.0": "Acme GmbH | Angebot 2026-117"},
+     "tables": {"BT0": {"start_row": 1, "rows": [["Beratung", "2", "2.400 €"], ["Schulung", "1", "900 €"]], "trim": true}},
+     "content_controls": {"Kunde": "Acme GmbH", "Freigabe": true},
+     "replace": {"[Kunde]": "Acme GmbH"}
+   }
+   EOF
+   python3 /mnt/data/skills/word-odt-skill/scripts/docx_fill.py "/mnt/data/<dokument>.docx" /tmp/plan.json "/mnt/data/<ergebnis>.docx"
+   ```
+
+   - `paragraphs`: Key → Text. Eine Liste oder `\n` fügt Absätze in derselben Formatierung hinzu
+     (z. B. weitere Bullets), `<br>` ist ein Zeilenumbruch, `null` löscht den Absatz. Bilder und
+     Textfelder, die im Absatz verankert sind, bleiben erhalten.
+   - `tables`: befüllt Zeilen ab `start_row` (0 = Kopfzeile). Mehr Zeilen, als die Tabelle hat, kopieren
+     ihre letzte Zeile samt Formatierung. `null` behält eine Zelle, und `trim` entfernt nicht genutzte
+     Musterzeilen.
+   - `content_controls`: per Tag oder Titel. `true`/`false` setzt ein Kontrollkästchen. Die
+     Platzhalter-Formatierung („Klicken oder tippen…“) wird entfernt.
+   - `replace`: Teilstring überall: Hauptteil, Tabellen, Textfelder, Kopf- und Fußzeilen.
+   - Textfelder werden in beiden Kopien aktualisiert, die Word speichert (sonst zeigen ältere Viewer den
+     alten Text). Die Formatierung kommt aus dem Absatz und seinem ersten Run.
+   - Keys beziehen sich immer auf das **Quelldokument**. Das Skript löst alle auf, bevor es etwas ändert.
+     Schreib den Plan im selben Aufruf nach `/tmp`, denn Dateien in `/mnt/data` werden zu Chat-Anhängen.
+
+3. **Prüfen**: Das Befüll-Skript endet mit einer Prüfung (Exit-Code 2 und `CHECK FAILED`, wenn Blindtext
+   oder ein Platzhalter eines Inhaltssteuerelements übrig ist). `docx_inventory.py "<ergebnis>" --check`
+   prüft einzeln. Absichtlich leere Felder (eine Unterschriftszeile) sind in Ordnung; nenne sie in der
+   Antwort.
+
+4. **Antworten**: Das Ergebnis kommt als Chat-Anhang zurück. Nenne, was du befüllt hast und was der
+   Nutzer noch selbst ausfüllen muss. Du kannst nur den Text prüfen, nicht das Seitenlayout. Bitte den
+   Nutzer, Zeilen- und Seitenumbrüche zu prüfen.
+
+**Ohne die Skripte** (nur `SKILL.md` wurde eingefügt): Nutze python-docx (zuerst `import docx`).
+
+- Geh alle Absätze durch, auch Tabellenzellen, Textfelder (`w:txbxContent`), Kopf- und Fußzeilen.
+- Ändere Text in den vorhandenen Runs; `paragraph.text` zu setzen löscht die Formatierung.
+- Kopiere eine Tabellenzeile mit `copy.deepcopy(row._tr)`.
+- Inhaltssteuerelemente sind `w:sdt`-Elemente. Entferne `w:showingPlcHdr`, nachdem du eines befüllt
+  hast.
+- Das Rezept zum Ersetzen auf Run-Ebene steht im **templates-skill** (`references/code-template-editing.md`).
+
+**Grenzen:**
+
+- Die Sandbox hat kein LibreOffice, also gibt es weder ein Rendering noch einen PDF-Export des
+  Ergebnisses. Für ein PDF nutzt du `convert_document` (convert-skill) auf dem fertigen DOCX, falls
+  verfügbar.
+- Für ODT gibt es in der Sandbox keine Python-Bibliothek.
+- Alte Formularfelder (`FORMTEXT`) und nachverfolgte Änderungen werden nicht behandelt; sag es, wenn das
+  Dokument sie nutzt.
+
+### Ohne Code-Ausführung
+
+Kein Tool befüllt so ein Dokument in seinem eigenen Layout. Sag das dem Nutzer klar und biete an:
+
+- Code-Ausführung einschalten (Chat-/Agent-Einstellung oder die Berechtigung `RUN_CODE` von einem
+  Admin).
+- Das Dokument einmal zu einer echten Vorlage machen: in Word den Blindtext durch `{{Platzhalter}}`
+  ersetzen und es als Vorlage hochladen. Danach befüllt `create_word_from_template` es ohne Code
+  (templates-skill).
+- Die Texte als Liste zum Einfügen, oder ein neues Dokument mit `create_word` im companyFILES-/CI-Design,
+  klar als nicht ihre Vorlage gekennzeichnet.
 
 ## Wichtige Hinweise
 

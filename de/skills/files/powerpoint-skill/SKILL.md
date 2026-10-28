@@ -1,6 +1,6 @@
 ---
 name: powerpoint-skill
-description: 'Erstellt und überarbeitet PowerPoint-Präsentationen (.pptx) mit companyFILES MCP-Tools. Verwenden, wenn eine Präsentation erstellt, ein Foliensatz aufgebaut, Folien ergänzt oder korrigiert, ein Corporate-Folienmaster verwendet oder mit einer .pptx gearbeitet werden soll, die der Nutzer im Chat angehängt hat („mach einen Foliensatz in diesem Design“, „ergänze Folien in dieser Präsentation“). Deckt alle drei Erstellungswege ab: von Grund auf (create_powerpoint), aus einer {{placeholder}}-Vorlage (create_powerpoint_from_template) und aus einem Corporate-Master OHNE Platzhalter über seine nativen Folienlayouts (describe_pptx_template, create_powerpoint_from_layouts, add_slides_from_layouts, set_powerpoint_slide_fields). Deckt außerdem iteratives Bearbeiten (append_slides_to_powerpoint, update_powerpoint_slide, read_powerpoint_slides), Klonen und Neubefüllen von Vorlagenfolien, formatierte Tabellen, Sprechernotizen, Bilder und Diagramme ab.'
+description: 'Erstellt und überarbeitet PowerPoint-Präsentationen (.pptx) mit companyFILES MCP-Tools. Verwenden, wenn eine Präsentation erstellt, Folien ergänzt oder korrigiert, ein Corporate-Folienmaster verwendet oder mit einer im Chat angehängten .pptx gearbeitet werden soll („mach einen Foliensatz in diesem Design“, „ergänze Folien“). Deckt alle Wege ab: von Grund auf (create_powerpoint), aus einer {{placeholder}}-Vorlage (create_powerpoint_from_template), aus einem Corporate-Master ohne Platzhalter über seine Folienlayouts (describe_pptx_template, create_powerpoint_from_layouts, add_slides_from_layouts, set_powerpoint_slide_fields) und aus einem Design-Deck, dessen Musterfolien nur Textfelder mit Blindtext haben („Text“, „XXX“, „TITEL“; per Code-Ausführung). Dazu iteratives Bearbeiten (append_slides_to_powerpoint, update_powerpoint_slide, read_powerpoint_slides), Klonen von Vorlagenfolien, Tabellen, Sprechernotizen, Bilder und Diagramme.'
 ---
 
 # PowerPoint Skill
@@ -42,8 +42,13 @@ SEED   → create_powerpoint* nur mit den ERSTEN 3–5 Folien → die zurückgeg
 EXTEND → append_slides_to_powerpoint (Weg A/B) oder add_slides_from_layouts (Weg C)
          in Paketen von 3–5 Folien, wiederholt
 REFINE → set_powerpoint_slide_fields oder update_powerpoint_slide für einzelne Korrekturen
-VERIFY → read_powerpoint_slides, um Folienanzahl, Reihenfolge und Titel zu prüfen
+VERIFY → read_powerpoint_slides, um Folienanzahl, Reihenfolge, Titel und übrig gebliebenen Blindtext zu prüfen
 ```
+
+**Melde einen Foliensatz nie als fertig, bevor du ihn zurückgelesen hast.** Folien, die noch den
+Blindtext der Vorlage zeigen („Text“, „XXX“, „TITEL“, „Lorem ipsum“) oder leer herauskommen, sind ein
+Fehler, kein Ergebnis. Korrigiere sie oder sag dem Nutzer genau, welche Folien nicht befüllt sind und
+warum.
 
 ### PLAN vor dem ersten Tool-Aufruf
 
@@ -98,12 +103,23 @@ uneinheitliches Design.
 | Keine Vorlage erwähnt, companyFILES-Design passt              | **A** `create_powerpoint`               |
 | Eine Vorlage existiert **und** enthält `{{key}}`-Markup       | **B** `create_powerpoint_from_template` |
 | Ein Corporate-Master / Folienmaster **ohne** `{{}}`-Markup    | **C** `create_powerpoint_from_layouts`  |
+| Ein Design-Deck, dessen **Musterfolien** das Design als einfache Textfelder mit Blindtext tragen und dessen Layouts (fast) keine Text-Slots haben | **D** Musterfolien klonen und befüllen (Code-Ausführung, §4a) |
 
-**So unterscheidest du B von C:** Führe `describe_pptx_template` auf der Vorlage aus und lies
+**So unterscheidest du B, C und D:** Führe `describe_pptx_template` auf der Vorlage aus und lies
 `hasLegacyPlaceholders`.
 
 - `true` → der Foliensatz verwendet `{{}}` → Weg **B** (siehe auch **templates-skill**)
-- `false` → Weg **C**
+- `false` → sieh dir die `slots` der Layouts an:
+  - die Layouts, die du brauchst, haben Text-Slots (`title`, `body:*`, …) → Weg **C**
+  - die Layouts haben **keine oder fast keine Text-Slots**, aber `read_powerpoint_slides` (mit
+    `include_layouts: false`) zeigt Text auf den eigenen Folien des Decks („Text“, „XXX“, „TITEL“,
+    „UNTERTITEL“, „Text 1 … Text 4“, eine Agenda mit „01 XXX“) → Weg **D**. Das Design steckt in den
+    Musterfolien, nicht in den Layouts. Eine Layout-Folie aus so einem Master kommt **leer** heraus
+    (nur Hintergrund, Logo und Fußzeile), und `set_powerpoint_slide_fields` meldet jeden Key als
+    `unknownFields`.
+- Gemischte Decks sind häufig: ein Titellayout mit echten Slots, aber Inhaltsfolien als Musterfolien.
+  Entscheide pro Folientyp; im Zweifel nimm Weg D für das ganze Deck, damit alle Folien aus derselben
+  Quelle stammen.
 
 `list_templates` (`type: "potx"`) listet Kandidaten auf und liefert für `{{}}`-Foliensätze eine
 Aufschlüsselung der Platzhalter pro Folie. Den Layout-Katalog liefert es **nicht** – dafür nimmst du
@@ -132,6 +148,7 @@ PROBE   describe_pptx_template { "librechat_file_id": "<file_id>" }
         → hasLegacyPlaceholders entscheidet den Weg (B oder C)
         read_powerpoint_slides { "librechat_file_id": "<file_id>" }, wenn der Foliensatz Inhalte hat,
         die du sehen oder erweitern musst – es meldet Layout und Slot-Keys jeder Folie
+        → Layouts ohne Text-Slots + Blindtext auf den Folien = Weg D (§4a)
 BUILD   (Weg C)
         neuer Foliensatz → create_powerpoint_from_layouts { "librechat_file_id": ..., "slides": [...] }
         erweitern        → add_slides_from_layouts     { "librechat_file_id": ..., "slides": [...] }
@@ -466,6 +483,115 @@ in einen Corporate-Master einzutippen** – genau das macht Weg C überflüssig.
 
 ---
 
+## 4a. Weg D – Design-Deck mit Blindtext auf den Musterfolien
+
+Viele Firmenvorlagen sind nicht so gebaut, wie PowerPoint es vorsieht. Die Designer haben die
+Inhaltsbereiche als **einfache Textfelder auf Musterfolien** angelegt (Titelfolie, Agenda,
+Kapiteltrenner, Inhaltsfolie, Abschlussfolie) und mit Blindtext gefüllt: „Text“, „XXX“, „TITEL“,
+„UNTERTITEL“, „Text 1 … Text 4“, „01 XXX“. Die Layouts hinter diesen Folien tragen nur Hintergrund,
+Logo, Fußzeile und Foliennummer. Deshalb finden die Layout-Tools aus Weg C nichts zum Befüllen.
+
+So ein Deck nutzt du so, wie es ein Mensch tun würde: **die passende Musterfolie duplizieren, ihre
+Textfelder überschreiben, die nicht genutzten Musterfolien löschen.** companyFILES hat kein Tool, das
+einfache Textfelder bearbeitet, deshalb braucht dieser Weg Code-Ausführung.
+
+**Erst planen, wie in §1:** Nenne für jede Folie des neuen Decks die Musterfolie, die sie kopiert
+(„Folie 5 = Inhaltsfolie mit drei Bullets“), und den Text für jedes ihrer Textfelder. Eine Musterfolie
+kannst du beliebig oft verwenden; nicht benötigte Musterfolien fallen weg. Halte die Texte ungefähr so
+lang wie den Blindtext. Die Felder haben eine feste Größe, und niemand sieht die Folie, bevor der
+Nutzer sie öffnet.
+
+### Wenn Code-Ausführung verfügbar ist
+
+Das angehängte Deck liegt in der Sandbox unter `/mnt/data/<dateiname>.pptx` (eine companyFILES-Vorlage:
+erst `attach_template_to_chat`, siehe **templates-skill**). Dieser Skill bringt zwei Skripte mit, unter
+`/mnt/data/skills/powerpoint-skill/scripts/`, wenn er als Paket installiert wurde:
+
+1. **Inventur**: listet jedes Shape mit ID und Absätzen auf:
+
+   ```bash
+   python3 /mnt/data/skills/powerpoint-skill/scripts/pptx_inventory.py "/mnt/data/<deck>.pptx"
+   ```
+
+   Jede Zeile lautet `id=<shape id> <art> "<name>"  [0] 'Absatz 0'  [1] 'Absatz 1' …`.
+   `box` = einfaches Textfeld (Inhalt für Weg D), `ph:*` = echter Platzhalter, `tbl` = Tabelle
+   (Zellen als `r<zeile>c<spalte>`), `in=<id>` = in einer Gruppe. `!DUMMY` markiert Blindtext. Große
+   Decks: `--slides 1-10` anhängen (die Ausgabe eines Aufrufs ist auf etwa 64 KB begrenzt).
+
+2. **Befüllen**: Plan schreiben und das Deck in einem Aufruf bauen:
+
+   ```bash
+   cat > /tmp/plan.json <<'EOF'
+   {"slides": [
+     {"from": 1, "texts": {"8": "Jahresbericht 2026", "18": "Berlin, 28.10.2026"}, "notes": "Begrüßung"},
+     {"from": 2, "texts": {"3": ["Markt", "Produkte", "Team", "Ausblick"]}},
+     {"from": 5, "texts": {"4": ["Stärke eins", "Stärke zwei", "Stärke drei"], "6": "01 UNTERNEHMEN"}},
+     {"from": 5, "texts": {"4": ["Zweite Folie", "im selben Design"], "6": "02 PRODUKTE"}},
+     {"from": 8, "replace": {"Musterfirma": "Acme GmbH"}}
+   ]}
+   EOF
+   python3 /mnt/data/skills/powerpoint-skill/scripts/pptx_fill.py "/mnt/data/<deck>.pptx" /tmp/plan.json "/mnt/data/<ergebnis>.pptx"
+   ```
+
+   - `from` = Nummer der Musterfolie, `texts` = Shape-ID → neuer Text. Die Shape-IDs bleiben auf
+     jeder Kopie einer Musterfolie gleich.
+   - Ein Text ist ein String (`\n` = neuer Absatz, `<br>` = Zeilenumbruch), eine Liste von Absätzen
+     (einer pro Bullet; `null` behält einen Absatz) oder `{"<absatz-index>": "text"}`, um einzelne
+     Zeilen eines Felds zu ändern (ein Feld mit `'XXX'  ''  'XXX'` = Überschrift, Leerzeile,
+     Beschreibung).
+   - Außerdem: `tables` (Shape-ID → Zeilen × Zellen), `images` (Shape-ID → `/mnt/data/<bild>`, tauscht
+     ein Bild und behält seinen Rahmen), `delete` (Shape-IDs, z. B. ein „ABBILDUNG“-Feld, für das du kein
+     Bild hast), `replace` (Teilstring auf der ganzen Folie), `notes`.
+   - Schreib den Plan im **selben** Aufruf nach `/tmp`. Dateien in `/mnt/data` werden zu Chat-Anhängen,
+     und `/tmp` wird nach jedem Aufruf geleert.
+   - Das Skript behält die Formatierung jedes Absatzes (Schrift, Größe, Farbe, Bullet), kopiert Diagramme
+     und Bilder mit der Folie und überschreibt die Quelle nie.
+
+3. **Prüfen**: Das Befüll-Skript endet mit einer Prüfung und beendet sich mit Code 2, wenn Blindtext
+   übrig ist (`CHECK FAILED` mit Folie, Shape-ID und Text). Korrigiere den Plan und führe ihn erneut aus.
+   Einzeln prüfen geht auch: `pptx_inventory.py "/mnt/data/<ergebnis>.pptx" --check`. Lass die Inventur
+   noch einmal über das Ergebnis laufen und vergleiche sie mit deinem Plan, bevor du antwortest.
+
+4. **Antworten**: Das Ergebnis kommt als Chat-Anhang zurück. Sag, aus welcher Musterfolie jede Folie
+   stammt und dass du nur den Text prüfen konntest, nicht das Aussehen. Bitte den Nutzer, auf Text zu
+   achten, der zu lang für sein Feld ist.
+
+**Ohne die Skripte** (der Skill wurde als einzelne `SKILL.md` eingefügt): Führe dieselben Schritte
+selbst mit python-pptx aus (zuerst `import pptx`; schlägt das fehl, siehe „Ohne Code-Ausführung“).
+
+- Geh alle Shapes durch, auch Gruppen (`shape.shapes`) und Tabellenzellen.
+- Ersetze Text **pro Absatz**: Schreib den Text in den ersten Run des Absatzes, leere die anderen Runs
+  und entferne oder kopiere ganze Absätze. `shape.text` oder `text_frame.text` zu setzen löscht die
+  Formatierung.
+- Zum Duplizieren einer Folie legst du eine Folie mit demselben Layout an, kopierst die Kinder des
+  `spTree` der Quellfolie und kopierst ihre Beziehungen (Bilder, Diagramme) mit neuen
+  Beziehungs-IDs.
+- Entferne nicht genutzte Folien aus `prs.slides._sldIdLst` und lösche ihre Beziehung.
+- Durchsuche das Ergebnis nach übrig gebliebenem Blindtext, bevor du antwortest.
+
+**Grenzen der Sandbox:**
+
+- Die Sandbox hat kein LibreOffice, also rendert nichts eine Folie zum Anschauen als Bild.
+- Jeder Aufruf endet nach etwa 15 Sekunden. Die Skripte brauchen etwa eine Sekunde, auch bei großen
+  Decks.
+- Eine einzelne Datei darf höchstens etwa 25 MB groß sein.
+
+### Ohne Code-Ausführung
+
+Es gibt keinen Tool-Weg, der diese Textfelder befüllt. Baue **keine** Layout-Folien, die leer
+herauskommen, und wechsle nicht zu `create_powerpoint`, um das Ergebnis dann Vorlage zu nennen. Sag dem
+Nutzer klar:
+
+- Die Vorlage hat ihre Inhaltsbereiche als einfache Textfelder auf Musterfolien. companyGPT kann sie nur
+  mit Code-Ausführung befüllen. Der Nutzer kann Code-Ausführung für den Chat oder Agenten einschalten
+  oder einen Admin um die Berechtigung `RUN_CODE` bitten.
+- Alternativ lässt sich der Folienmaster einmal mit echten Platzhaltern in seinen Layouts neu bauen
+  (PowerPoint: Ansicht → Folienmaster → Platzhalter einfügen). Danach funktioniert Weg C ohne Code.
+- Biete an, was jetzt geht: die Folientexte als strukturierte Gliederung zum Einfügen in die Vorlage
+  oder ein Deck im companyFILES-Design (Weg A), klar als **nicht** die Firmenvorlage gekennzeichnet.
+
+---
+
 ## 5. Iteratives Bearbeiten beliebiger Foliensätze
 
 Alle drei folgenden Tools adressieren den Foliensatz über `document_id` **oder** `librechat_file_id`
@@ -601,6 +727,13 @@ Foliensatzes (nur `slideNumber`, `title`, `textLines`).
 - **`reference_slide` + `markdown`/`slides` ist ein Fehler.** Wähle einen Modus.
 - **`slide_number` beginnt bei 1**; ein Wert außerhalb des Bereichs ist ein Fehler, der die
   tatsächliche Folienanzahl meldet.
+- **Ein Layout ohne Text-Slots ist keine leere Folie zum Befüllen.** Listet `describe_pptx_template`
+  für die Layouts, die du brauchst, keine `title`/`body`-Slots, bleibt eine Layout-Folie leer: nur
+  Hintergrund, Logo und Fußzeile. Das ist Weg D (§4a), kein Aufruf, den du mit anderen Feldnamen
+  wiederholst.
+- **„Fertig“ heißt: zurückgelesen und frei von Blindtext.** Ein Deck, das noch „Text“, „XXX“ oder
+  „TITEL“ zeigt oder leere Inhaltsfolien hat, darf nicht als fertig gemeldet werden. Es als fertig zu
+  melden und den Nutzer den Blindtext selbst finden zu lassen, ist das schlechteste Ergebnis.
 - **`unknownFields` / `emptySlots`** in einer Layout-Antwort signalisieren, dass ein Slot-Key falsch
   war – lies `describe_pptx_template` erneut, statt zu raten. Gängige Synonyme werden akzeptiert
   (`title` für einen `ctrTitle`-Platzhalter, `subtitle` für `subTitle`, `content`/`bullets` für
@@ -685,7 +818,7 @@ Ein einziger Durchlauf, der alle Folienfunktionen abdeckt. Nützlich, um ein Dep
     einer Titel-Bild-Folie → das Bild füllt den Platzhalterrahmen, zugeschnitten statt verzerrt, und
     `slide.filledImageSlots` in der Antwort listet `pic:14`.
 
-**Weg D – ein im Chat angehängter Foliensatz**
+**Ein im Chat angehängter Foliensatz (§2a)**
 
 12. Eine `.pptx` an eine Chat-Nachricht anhängen → `list_my_files` zeigt sie mit einer `file_id`.
 13. `describe_pptx_template { "librechat_file_id": "<file_id>" }` → derselbe Katalog wie in Schritt 7,
@@ -696,17 +829,28 @@ Ein einziger Durchlauf, der alle Folienfunktionen abdeckt. Nützlich, um ein Dep
     Anhang direkt aktualisiert wurde (gleiche `file_id`, `librechat_file_id` in der Antwort) oder dass
     die geänderte Kopie als neues Dokument gespeichert wurde (neue `id` und `markdownLink`).
 
+**Weg D – Design-Deck mit Blindtext (Code-Ausführung)**
+
+16. Ein Deck anhängen, dessen Inhaltsfolien einfache Textfelder sind („Text“, „XXX“) →
+    `describe_pptx_template` zeigt Layouts ohne Text-Slots, `read_powerpoint_slides` zeigt den Blindtext.
+17. `pptx_inventory.py` auf `/mnt/data/<deck>.pptx` → Zeilen mit `box` und `!DUMMY`.
+18. `pptx_fill.py` mit einem Plan, der eine Musterfolie zweimal nutzt, eine Liste von Bullets, eine
+    Absatz-Map `{"0": …, "2": …}` und ein `delete` → `saved … N slides`, `CHECK OK`, und das Ergebnis
+    kommt als Chat-Anhang zurück; in PowerPoint sehen die Kopien aus wie die Musterfolie.
+19. Derselbe Plan mit einer weggelassenen Shape-ID → `CHECK FAILED` mit dieser Folie und Shape,
+    Exit-Code 2.
+
 **Fehlerpfade**
 
-16. `"layout": "GibtsNicht"` → Fehler, der alle Layouts **und** Rollen auflistet.
-17. `fields: { "untertitel": "x" }` auf einem Layout ohne diesen Slot → `unknownFields: ["untertitel"]`.
-18. `slide_number: 99` bei `set_powerpoint_slide_fields` → Fehler mit der tatsächlichen Folienanzahl.
-19. `reference_slide` zusammen mit `slides` → Fehler.
-20. Ein Foliensatz **mit** `{{}}`-Markup durch `describe_pptx_template` →
+20. `"layout": "GibtsNicht"` → Fehler, der alle Layouts **und** Rollen auflistet.
+21. `fields: { "untertitel": "x" }` auf einem Layout ohne diesen Slot → `unknownFields: ["untertitel"]`.
+22. `slide_number: 99` bei `set_powerpoint_slide_fields` → Fehler mit der tatsächlichen Folienanzahl.
+23. `reference_slide` zusammen mit `slides` → Fehler.
+24. Ein Foliensatz **mit** `{{}}`-Markup durch `describe_pptx_template` →
     `hasLegacyPlaceholders: true` → zu `create_powerpoint_from_template` wechseln.
-21. `add_slides_from_layouts` auf einem mit `create_powerpoint` erstellten Foliensatz → Fehler, der
+25. `add_slides_from_layouts` auf einem mit `create_powerpoint` erstellten Foliensatz → Fehler, der
     `append_slides_to_powerpoint` nennt, und die Folienanzahl des Foliensatzes bleibt unverändert.
-22. `add_slides_from_layouts` mit `insert_after` jenseits der Folienanzahl → Fehler mit der
+26. `add_slides_from_layouts` mit `insert_after` jenseits der Folienanzahl → Fehler mit der
     tatsächlichen Anzahl.
 
 `MANUAL_TESTS.md` §4.6 (Corporate-Master) und §4.9 (im Chat angehängter Foliensatz) enthalten diese

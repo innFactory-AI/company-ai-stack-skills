@@ -35,6 +35,7 @@ Check your tool list before you choose a route. Apps (companyFILES, companyRAG, 
 | Chart from attached data | Code execution (matplotlib/plotly) **or** companyFILES `show_interactive_chart` (in the chat) / `create_chart_document` (in a document) | Without code execution: read the values with `read_excel`, then the companyFILES chart tools |
 | Fill a company template | companyFILES `list_templates` + `create_*_from_template` (templates skill) | — |
 | Bulk or free-form edits in a template's layout | companyFILES `attach_template_to_chat`, then code execution from the user's **next** message (templates skill) | Needs code execution and LibreChat file storage for companyFILES; otherwise `create_*_from_template` plus the iterative edit tools |
+| Fill an attached corporate deck or Word document that has sample text ("Text", "XXX", "[Kunde]") but no `{{placeholders}}` | Code execution with the scripts of the PowerPoint skill (path D) or the Word skill | Without code execution there is no tool for it: say so and offer the options from those skills; never deliver empty or sample-text slides as done |
 | Edit an attached Excel/Word/PowerPoint file | companyFILES `modify_excel`, `append_to_word`/`replace_word_content`, PowerPoint edit tools with `librechat_file_id` | With code execution also possible in the sandbox (save as a new file) |
 | E-mails (`.msg`, `.eml`), ZIP archives, legacy formats (`.doc`, `.xls`, `.ppt`, RTF, ODF), scanned PDFs | companyFILES `read_file` / `save_file_part` / `convert_to_markdown` | Only if available in your tool list; otherwise ask for a PDF or DOCX export |
 | Convert between formats | companyFILES `convert_document` (convert skill) | — |
@@ -52,7 +53,8 @@ Use it for calculations on attached data, charts as images, and bulk edits. With
 
 - Files attached in the chat are in the sandbox at `/mnt/data/<filename>`. Check with `os.listdir("/mnt/data")` first.
 - The sandbox has no network access: no downloads, no API calls, no `pip install`.
-- Check a library with `import` before relying on it (usually present: pandas, numpy, openpyxl, python-docx, python-pptx, matplotlib, plotly). If one is missing, use the fallback.
+- Check a library with `import` before relying on it (usually present: pandas, numpy, openpyxl, xlsxwriter, python-docx, python-pptx, matplotlib, plotly, Pillow, reportlab, PyPDF2, pdfminer.six; also `pdftoppm`/`pdftotext`). Not present: LibreOffice (no rendering of DOCX/PPTX to PDF or images), pdfplumber, the newer `pypdf`. If one is missing, use the fallback.
+- Each call runs for at most about 15 seconds; only `/mnt/data` survives between calls (`/tmp`, variables and the working directory do not).
 - Save results under a new name in `/mnt/data/`; they come back as chat attachments. Never overwrite the input.
 - Work out numbers in code, not in your head, and report the figures from the code output.
 - For a formatted XLSX/DOCX/PPTX in the corporate design, prefer companyFILES (or the template route) over files built from scratch in code.

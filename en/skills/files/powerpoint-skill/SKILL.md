@@ -1,6 +1,6 @@
 ---
 name: powerpoint-skill
-description: 'Build and refine PowerPoint (.pptx) presentations with companyFILES MCP tools. Use when asked to create a presentation, build a deck, add or fix slides, use a corporate slide master / Folienmaster, or work with a .pptx the user attached in the chat ("make a deck in this design", "add slides to this presentation"). Covers all three build paths: from scratch (create_powerpoint), from a {{placeholder}} template (create_powerpoint_from_template), and from a corporate master WITHOUT any placeholders via its native slide layouts (describe_pptx_template, create_powerpoint_from_layouts, add_slides_from_layouts, set_powerpoint_slide_fields). Also covers iterative editing (append_slides_to_powerpoint, update_powerpoint_slide, read_powerpoint_slides), clone-and-refill of template slides, styled tables, speaker notes, images and charts.'
+description: 'Build and refine PowerPoint (.pptx) presentations with companyFILES MCP tools. Use when asked to create a presentation, build a deck, add or fix slides, use a corporate slide master / Folienmaster, or work with a .pptx the user attached in the chat ("make a deck in this design", "add slides to this presentation"). Covers all three build paths: from scratch (create_powerpoint), from a {{placeholder}} template (create_powerpoint_from_template), and from a corporate master WITHOUT any placeholders via its native slide layouts (describe_pptx_template, create_powerpoint_from_layouts, add_slides_from_layouts, set_powerpoint_slide_fields). Also covers iterative editing (append_slides_to_powerpoint, update_powerpoint_slide, read_powerpoint_slides), clone-and-refill of template slides, styled tables, speaker notes, images and charts, and design decks whose example slides only hold plain text boxes with sample text ("Text", "XXX", "TITEL"), filled with code execution.'
 ---
 
 # PowerPoint Skill
@@ -41,8 +41,12 @@ SEED   → create_powerpoint* with the FIRST 3–5 slides only → keep the retu
 EXTEND → append_slides_to_powerpoint (path A/B) or add_slides_from_layouts (path C)
          in chunks of 3–5 slides, repeatedly
 REFINE → set_powerpoint_slide_fields or update_powerpoint_slide for individual fixes
-VERIFY → read_powerpoint_slides to confirm slide count, order and titles
+VERIFY → read_powerpoint_slides to confirm slide count, order, titles and that no sample text is left
 ```
+
+**Never report a deck as done before you have read it back.** Slides that still show the
+template's sample text ("Text", "XXX", "TITEL", "Lorem ipsum") or that came out empty are a
+failure, not a result. Fix them, or tell the user exactly which slides are not filled and why.
 
 ### PLAN before the first tool call
 
@@ -96,12 +100,23 @@ Decide once, at the start. Mixing paths in one deck produces inconsistent design
 | No template mentioned, companyFILES design is fine          | **A** `create_powerpoint`               |
 | A template exists **and** contains `{{key}}` markup         | **B** `create_powerpoint_from_template` |
 | A corporate master / Folienmaster with **no** `{{}}` markup | **C** `create_powerpoint_from_layouts`  |
+| A design deck whose **example slides** carry the design as plain text boxes with sample text, and whose layouts have (almost) no text slots | **D** clone and fill the example slides (code execution, §4a) |
 
-**How to tell B from C:** run `describe_pptx_template` on the template and read
+**How to tell B, C and D apart:** run `describe_pptx_template` on the template and read
 `hasLegacyPlaceholders`.
 
 - `true` → the deck uses `{{}}` → path **B** (see also **templates-skill**)
-- `false` → path **C**
+- `false` → look at the layouts' `slots`:
+  - the layouts you need have text slots (`title`, `body:*`, …) → path **C**
+  - the layouts have **no or almost no text slots**, but `read_powerpoint_slides` (with
+    `include_layouts: false`) shows text on the deck's own slides ("Text", "XXX", "TITEL",
+    "UNTERTITEL", "Text 1 … Text 4", an agenda with "01 XXX") → path **D**. The design lives in
+    the example slides, not in the layouts. A layout slide built from such a master comes out
+    **empty** (only background, logo and footer), and `set_powerpoint_slide_fields` reports
+    `unknownFields` for every key.
+- Mixed decks are common: a title layout with real slots, but content slides as example slides.
+  Decide per slide type; when in doubt, use path D for the whole deck so all slides come from
+  the same source.
 
 `list_templates` (`type: "potx"`) lists candidates and, for `{{}}` decks, a per-slide placeholder
 breakdown. It does **not** return the layout catalog — use `describe_pptx_template` for that.
@@ -128,6 +143,7 @@ PROBE   describe_pptx_template { "librechat_file_id": "<file_id>" }
         → hasLegacyPlaceholders decides the path (B vs C)
         read_powerpoint_slides { "librechat_file_id": "<file_id>" } if the deck has content
         you need to see or extend — it reports each slide's layout and slot keys
+        → layouts without text slots + sample text on the slides = path D (§4a)
 BUILD   (path C)
         new deck   → create_powerpoint_from_layouts { "librechat_file_id": ..., "slides": [...] }
         extend it  → add_slides_from_layouts     { "librechat_file_id": ..., "slides": [...] }
@@ -455,6 +471,112 @@ path C removes.
 
 ---
 
+## 4a. Path D — design deck with sample text on its example slides
+
+Many corporate templates are not built the way PowerPoint intends. The designers placed the
+content areas as **plain text boxes on example slides** (title slide, agenda, chapter divider,
+content slide, closing slide) and filled them with sample text: "Text", "XXX", "TITEL",
+"UNTERTITEL", "Text 1 … Text 4", "01 XXX". The layouts behind those slides carry only background,
+logo, footer and slide number. That is why the layout tools of path C find nothing to fill.
+
+The way to use such a deck is the way a person would: **duplicate the right example slide, type
+over its text boxes, delete the example slides you did not use.** companyFILES has no tool for
+editing plain text boxes, so this path needs code execution.
+
+**Plan first, the same way as in §1:** for every slide of the new deck, name the example slide
+it copies ("slide 5 = content slide with three bullets") and the text for each of its boxes. One
+example slide can be used as often as needed; example slides that are not needed are dropped.
+Keep the text roughly as long as the sample. The boxes have a fixed size, and nobody can see the
+slide before the user opens it.
+
+### If code execution is available
+
+The deck the user attached is in the sandbox at `/mnt/data/<filename>.pptx` (a companyFILES
+template: `attach_template_to_chat` first, see **templates-skill**). This skill ships two scripts,
+under `/mnt/data/skills/powerpoint-skill/scripts/` when it was installed as a package:
+
+1. **Inventory**: list every shape with its id and paragraphs:
+
+   ```bash
+   python3 /mnt/data/skills/powerpoint-skill/scripts/pptx_inventory.py "/mnt/data/<deck>.pptx"
+   ```
+
+   Each line reads `id=<shape id> <kind> "<name>"  [0] 'paragraph 0'  [1] 'paragraph 1' …`.
+   `box` = plain text box (path D content), `ph:*` = a real placeholder, `tbl` = table (cells as
+   `r<row>c<col>`), `in=<id>` = inside a group. `!DUMMY` marks sample text. Big decks: add
+   `--slides 1-10` (the output of one call is limited to about 64 KB).
+
+2. **Fill**: write a plan and build the deck in one call:
+
+   ```bash
+   cat > /tmp/plan.json <<'EOF'
+   {"slides": [
+     {"from": 1, "texts": {"8": "Annual Report 2026", "18": "Berlin, 28 October 2026"}, "notes": "Welcome"},
+     {"from": 2, "texts": {"3": ["Market", "Products", "Team", "Outlook"]}},
+     {"from": 5, "texts": {"4": ["Strength one", "Strength two", "Strength three"], "6": "01 COMPANY"}},
+     {"from": 5, "texts": {"4": ["Second slide", "in the same design"], "6": "02 PRODUCTS"}},
+     {"from": 8, "replace": {"Musterfirma": "Acme Corp"}}
+   ]}
+   EOF
+   python3 /mnt/data/skills/powerpoint-skill/scripts/pptx_fill.py "/mnt/data/<deck>.pptx" /tmp/plan.json "/mnt/data/<result>.pptx"
+   ```
+
+   - `from` = example slide number, `texts` = shape id → new text. Shape ids stay the same on
+     every copy of an example slide.
+   - A text is a string (`\n` = new paragraph, `<br>` = line break), a list of paragraphs (one per
+     bullet; `null` keeps a paragraph), or `{"<paragraph index>": "text"}` to change single lines
+     of a box (a box with `'XXX'  ''  'XXX'` = heading, spacer, description).
+   - Also available: `tables` (shape id → rows × cells), `images` (shape id → `/mnt/data/<image>`,
+     swaps a picture and keeps its frame), `delete` (shape ids, e.g. an "ABBILDUNG" box you have no
+     picture for), `replace` (substring on the whole slide), `notes`.
+   - Write the plan to `/tmp` in the **same** call. Files in `/mnt/data` become chat attachments,
+     and `/tmp` is emptied after every call.
+   - The script keeps each paragraph's formatting (font, size, colour, bullet), copies charts and
+     images with the slide, and refuses to overwrite the source.
+
+3. **Check**: the fill script ends with a check and exits with code 2 if sample text is left
+   (`CHECK FAILED` with slide, shape id and text). Fix the plan and run it again. You can also check
+   on its own: `pptx_inventory.py "/mnt/data/<result>.pptx" --check`. Run the inventory on the
+   result once more and compare it with your plan before you answer.
+
+4. **Answer**: the result comes back as a chat attachment. Say which example slide each slide
+   came from, and that you could only check the text, not the look. Ask the user to look for text
+   that is too long for its box.
+
+**Without the scripts** (the skill was pasted as a single `SKILL.md`): do the same steps with
+python-pptx yourself (`import pptx` first; if it fails, see "without code execution").
+
+- Walk all shapes, including groups (`shape.shapes`) and table cells.
+- Replace text **per paragraph**: put the text into the paragraph's first run, empty the other runs,
+  and remove or copy whole paragraphs. Setting `shape.text` or `text_frame.text` wipes the
+  formatting.
+- To duplicate a slide, add a slide with the same layout, copy the source slide's `spTree`
+  children, and copy its relationships (images, charts) with new relationship ids.
+- Remove unused slides from `prs.slides._sldIdLst` and drop their relationship.
+- Search the result for leftover sample text before you answer.
+
+**Limits of the sandbox:**
+
+- The sandbox has no LibreOffice, so nothing renders a slide to an image for a look.
+- Each call stops after about 15 seconds. The scripts need about one second, even for large decks.
+- A single file can be at most about 25 MB.
+
+### Without code execution
+
+There is no tool route that fills these text boxes. Do **not** build layout slides that come out
+empty, and do not switch to `create_powerpoint` and call it the template. Tell the user plainly:
+
+- The template keeps its content areas as plain text boxes on example slides. companyGPT can only
+  fill these with code execution. They can turn code execution on for the chat or agent, or ask an
+  admin for the `RUN_CODE` permission.
+- Alternatively, the slide master can be rebuilt once with real placeholders in its layouts
+  (PowerPoint: View → Slide Master → Insert Placeholder). After that, path C works without code.
+- Offer what does work right now: the slide texts as a structured outline to paste into the
+  template, or a deck in the companyFILES design (path A), clearly labelled as **not** the
+  corporate template.
+
+---
+
 ## 5. Iterative editing of any deck
 
 All three tools below target the deck with `document_id` **or** `librechat_file_id` (a LibreChat
@@ -583,6 +705,12 @@ the keys still free. Pass `include_layouts: false` for a text-only read of a ver
   `slide_number`. Omit it to author slide 1 yourself.
 - **`reference_slide` + `markdown`/`slides` is an error.** Pick one mode.
 - **`slide_number` is 1-based**; out of range is an error that reports the real slide count.
+- **A layout without text slots is not a blank slide to fill.** If `describe_pptx_template` lists
+  no `title`/`body` slots for the layouts you need, a layout slide stays empty: background, logo
+  and footer only. That is path D (§4a), not a call to retry with other field names.
+- **"Done" means read back and free of sample text.** A deck that still shows "Text", "XXX" or
+  "TITEL", or has empty content slides, must not be reported as finished. Claiming it is done
+  and the user finding the sample text themselves is the worst outcome.
 - **`unknownFields` / `emptySlots`** in a layout response are the signal that a slot key was
   wrong — re-read `describe_pptx_template` rather than guessing. Common synonyms are accepted
   (`title` for a `ctrTitle` placeholder, `subtitle` for `subTitle`, `content`/`bullets` for
@@ -665,7 +793,7 @@ A single run that exercises every slide feature. Useful for verifying a deployme
     a title-image slide → the picture fills the placeholder frame, cropped not stretched, and
     the response's `slide.filledImageSlots` lists `pic:14`.
 
-**Path D — a deck attached in the chat**
+**A deck attached in the chat (§2a)**
 
 12. Attach a `.pptx` to a chat message → `list_my_files` shows it with a `file_id`.
 13. `describe_pptx_template { "librechat_file_id": "<file_id>" }` → the same catalog as step 7,
@@ -676,17 +804,28 @@ A single run that exercises every slide feature. Useful for verifying a deployme
     was updated in place (same `file_id`, `librechat_file_id` in the response) or that the modified
     copy was saved as a new document (new `id` and `markdownLink`).
 
+**Path D — design deck with sample text (code execution)**
+
+16. Attach a deck whose content slides are plain text boxes ("Text", "XXX") →
+    `describe_pptx_template` shows layouts without text slots, `read_powerpoint_slides` shows the
+    sample text.
+17. `pptx_inventory.py` on `/mnt/data/<deck>.pptx` → lines with `box` and `!DUMMY`.
+18. `pptx_fill.py` with a plan that uses one example slide twice, a list of bullets, a
+    `{"0": …, "2": …}` paragraph map and a `delete` → `saved … N slides`, `CHECK OK`, and the
+    result arrives as a chat attachment; in PowerPoint the copies look like the example slide.
+19. The same plan with one shape id left out → `CHECK FAILED` naming that slide and shape, exit code 2.
+
 **Error paths**
 
-16. `"layout": "GibtsNicht"` → error listing all layouts **and** roles.
-17. `fields: { "untertitel": "x" }` on a layout without that slot → `unknownFields: ["untertitel"]`.
-18. `slide_number: 99` on `set_powerpoint_slide_fields` → error naming the real slide count.
-19. `reference_slide` together with `slides` → error.
-20. A deck **with** `{{}}` markup through `describe_pptx_template` →
+20. `"layout": "GibtsNicht"` → error listing all layouts **and** roles.
+21. `fields: { "untertitel": "x" }` on a layout without that slot → `unknownFields: ["untertitel"]`.
+22. `slide_number: 99` on `set_powerpoint_slide_fields` → error naming the real slide count.
+23. `reference_slide` together with `slides` → error.
+24. A deck **with** `{{}}` markup through `describe_pptx_template` →
     `hasLegacyPlaceholders: true` → switch to `create_powerpoint_from_template`.
-21. `add_slides_from_layouts` on a deck built by `create_powerpoint` → error naming
+25. `add_slides_from_layouts` on a deck built by `create_powerpoint` → error naming
     `append_slides_to_powerpoint`, and the deck's slide count is unchanged.
-22. `add_slides_from_layouts` with `insert_after` beyond the slide count → error naming the real
+26. `add_slides_from_layouts` with `insert_after` beyond the slide count → error naming the real
     count.
 
 `MANUAL_TESTS.md` §4.6 (corporate master) and §4.9 (deck attached in the chat) hold these

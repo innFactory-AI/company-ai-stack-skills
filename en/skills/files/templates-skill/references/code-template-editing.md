@@ -34,7 +34,11 @@ for m in ("docx", "openpyxl", "pptx"):
 
 `docx` = python-docx, `openpyxl`, `pptx` = python-pptx. If the one you need is missing, fall back to the template
 tools. There is no ODT library in the standard sandbox (`import odf` usually fails): use `create_odt_from_template`
-for ODT.
+for ODT. The sandbox has no LibreOffice either, so it cannot render a document to PDF or an image.
+
+For a template without `{{}}` whose content sits as sample text in text boxes, example slides, content controls or
+sample table rows, use the scripts of **powerpoint-skill** (path D, `pptx_inventory.py` / `pptx_fill.py`) and
+**word-odt-skill** (`docx_inventory.py` / `docx_fill.py`) instead of hand-written replace code.
 
 ## 3. Rules
 
@@ -175,5 +179,6 @@ slide.placeholders[1].text_frame.text = "Owner: PMO"   # idx from the listing ab
 prs.save("/mnt/data/<result>.pptx")
 ```
 
-python-pptx has no "duplicate slide" function; build new slides from layouts, or use the companyFILES tools
-(`append_slides_to_powerpoint` with `reference_slide`, `add_slides_from_layouts`) for clone-and-refill.
+python-pptx has no "duplicate slide" function. Build new slides from layouts, or use the companyFILES tools
+(`append_slides_to_powerpoint` with `reference_slide`, `add_slides_from_layouts`) for clone-and-refill. To copy
+example slides with plain text boxes (and their images and charts), use `pptx_fill.py` from **powerpoint-skill**.
