@@ -517,6 +517,12 @@ erst `attach_template_to_chat`, siehe **templates-skill**). Dieser Skill bringt 
    `box` = einfaches Textfeld (Inhalt für Weg D), `ph:*` = echter Platzhalter, `tbl` = Tabelle
    (Zellen als `r<zeile>c<spalte>`), `in=<id>` = in einer Gruppe. `!DUMMY` markiert Blindtext. Große
    Decks: `--slides 1-10` anhängen (die Ausgabe eines Aufrufs ist auf etwa 64 KB begrenzt).
+   - `fit≈22ch×3 lines` = ungefähr so viel Text fasst das Feld laut Design. Die farbige Kachel oder
+     der abgerundete Kasten hinter einem Textfeld ist für seinen Blindtext bemessen. Plane deine
+     Texte innerhalb dieser Grenze: Eine Überschrift mit 6 Zeichen braucht einen kurzen Ersatz, keinen
+     Satz.
+   - `<r>` in einem Absatz markiert einen Formatwechsel, z. B. `'01 <r>TITEL'` = fette Nummer + normaler
+     Titel. Behalte das `<r>` in deinem Text (`"02 <r>PORTFOLIO"`), dann bleiben beide Formate.
 
 2. **Befüllen**: Plan schreiben und das Deck in einem Aufruf bauen:
 
@@ -549,12 +555,19 @@ erst `attach_template_to_chat`, siehe **templates-skill**). Dieser Skill bringt 
 
 3. **Prüfen**: Das Befüll-Skript endet mit einer Prüfung und beendet sich mit Code 2, wenn Blindtext
    übrig ist (`CHECK FAILED` mit Folie, Shape-ID und Text). Korrigiere den Plan und führe ihn erneut aus.
+   Eine `FIT WARNING` heißt: Ein Text ist zu lang für sein Feld oder die Form dahinter und läuft über das
+   Design hinaus. Kürze genau diese Texte und führe den Plan erneut aus, bis keine Warnung mehr kommt.
    Einzeln prüfen geht auch: `pptx_inventory.py "/mnt/data/<ergebnis>.pptx" --check`. Lass die Inventur
    noch einmal über das Ergebnis laufen und vergleiche sie mit deinem Plan, bevor du antwortest.
 
 4. **Antworten**: Das Ergebnis kommt als Chat-Anhang zurück. Sag, aus welcher Musterfolie jede Folie
    stammt und dass du nur den Text prüfen konntest, nicht das Aussehen. Bitte den Nutzer, auf Text zu
    achten, der zu lang für sein Feld ist.
+
+**Schreib keinen eigenen Befüll-Code, wenn die Skripte da sind.** Prüfe zuerst:
+`ls /mnt/data/skills/powerpoint-skill/scripts/`. Code, der allen Text ins größte Shape schreibt oder
+`text_frame.clear()` aufruft bzw. `paragraph.text` setzt, löscht Schriften und Bullets der Vorlage,
+legt Text über Bilder und lässt den Blindtext in den anderen Feldern stehen.
 
 **Ohne die Skripte** (der Skill wurde als einzelne `SKILL.md` eingefügt): Führe dieselben Schritte
 selbst mit python-pptx aus (zuerst `import pptx`; schlägt das fehl, siehe „Ohne Code-Ausführung“).

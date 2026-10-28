@@ -505,6 +505,11 @@ under `/mnt/data/skills/powerpoint-skill/scripts/` when it was installed as a pa
    `box` = plain text box (path D content), `ph:*` = a real placeholder, `tbl` = table (cells as
    `r<row>c<col>`), `in=<id>` = inside a group. `!DUMMY` marks sample text. Big decks: add
    `--slides 1-10` (the output of one call is limited to about 64 KB).
+   - `fit≈22ch×3 lines` = roughly how much text the box holds as designed. The coloured tile or
+     rounded box behind a text box is sized for its sample text. Plan your texts within this
+     limit: a heading of 6 characters needs a short replacement, not a sentence.
+   - `<r>` inside a paragraph marks a change of formatting, e.g. `'01 <r>TITEL'` = bold number +
+     normal title. Keep the `<r>` in your text (`"02 <r>PORTFOLIO"`) so both formats stay.
 
 2. **Fill**: write a plan and build the deck in one call:
 
@@ -535,13 +540,20 @@ under `/mnt/data/skills/powerpoint-skill/scripts/` when it was installed as a pa
      images with the slide, and refuses to overwrite the source.
 
 3. **Check**: the fill script ends with a check and exits with code 2 if sample text is left
-   (`CHECK FAILED` with slide, shape id and text). Fix the plan and run it again. You can also check
+   (`CHECK FAILED` with slide, shape id and text). Fix the plan and run it again. A
+   `FIT WARNING` means a text is too long for its box or the shape behind it and will spill over
+   the design: shorten exactly those texts and run again until no warning is left. You can also check
    on its own: `pptx_inventory.py "/mnt/data/<result>.pptx" --check`. Run the inventory on the
    result once more and compare it with your plan before you answer.
 
 4. **Answer**: the result comes back as a chat attachment. Say which example slide each slide
    came from, and that you could only check the text, not the look. Ask the user to look for text
    that is too long for its box.
+
+**Do not write your own fill code when the scripts are there.** Check first:
+`ls /mnt/data/skills/powerpoint-skill/scripts/`. Code that writes all text into the largest shape,
+or that calls `text_frame.clear()` / sets `paragraph.text`, wipes the template's fonts and bullets,
+covers pictures with text and leaves the sample text in the other boxes.
 
 **Without the scripts** (the skill was pasted as a single `SKILL.md`): do the same steps with
 python-pptx yourself (`import pptx` first; if it fails, see "without code execution").

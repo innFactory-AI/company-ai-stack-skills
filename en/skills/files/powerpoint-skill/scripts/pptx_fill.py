@@ -39,6 +39,10 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from pptx.oxml.ns import qn
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pptx_inventory import (EMU_PER_PT, RUN_MARK, box_metrics, capacity, overflow, run_groups,  # noqa: E402
+                            text_layout)
+
 R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 SHARED_RELS = {RT.IMAGE, RT.MEDIA, RT.VIDEO, RT.AUDIO, RT.SLIDE_LAYOUT, RT.HYPERLINK, RT.SLIDE,
                RT.NOTES_MASTER, RT.SLIDE_MASTER, RT.THEME}
@@ -159,26 +163,36 @@ def _run_props(p):
 
 
 def set_paragraph(p, text):
-    """Replace the text of one paragraph, keeping paragraph and first-run formatting."""
-    rpr = _run_props(p)
+    """Replace the text of one paragraph, keeping paragraph formatting and run formatting.
+
+    Text segments separated by <r> take the formatting of the paragraph's formatting groups in order
+    (see pptx_inventory: '01 <r>TITEL'); without <r> the whole text takes the first run's formatting.
+    """
     pel = p._p
+    groups = [g[0] for g in run_groups(pel)]
+    fallback = _run_props(p)
+    styles = [copy.deepcopy(g) if g is not None else None for g in groups] or [fallback]
     for child in list(pel):
         if child.tag in (qn("a:r"), qn("a:br"), qn("a:fld")):
             pel.remove(child)
     end = pel.find(qn("a:endParaRPr"))
-    for i, part in enumerate(re.split(r"<br\s*/?>|\v", str(text))):
-        if i:
-            br = pel.makeelement(qn("a:br"), {})
+    for si, segment in enumerate(str(text).split(RUN_MARK)):
+        rpr = styles[min(si, len(styles) - 1)]
+        for i, part in enumerate(re.split(r"<br\s*/?>|\v", segment)):
+            if i:
+                br = pel.makeelement(qn("a:br"), {})
+                if rpr is not None:
+                    br.append(copy.deepcopy(rpr))
+                _insert(pel, br, end)
+            if not part and i == 0 and si:
+                continue
+            r = pel.makeelement(qn("a:r"), {})
             if rpr is not None:
-                br.append(copy.deepcopy(rpr))
-            _insert(pel, br, end)
-        r = pel.makeelement(qn("a:r"), {})
-        if rpr is not None:
-            r.append(copy.deepcopy(rpr))
-        t = r.makeelement(qn("a:t"), {})
-        t.text = part
-        r.append(t)
-        _insert(pel, r, end)
+                r.append(copy.deepcopy(rpr))
+            t = r.makeelement(qn("a:t"), {})
+            t.text = part
+            r.append(t)
+            _insert(pel, r, end)
 
 
 def _insert(parent, el, before):
@@ -228,6 +242,29 @@ def replace_in_paragraph(p, old, new):
     return 1
 
 
+def grow_to_text(shape):
+    """An auto-sizing box that does not wrap gets the width of its new text, as PowerPoint does on edit.
+
+    Otherwise viewers disagree: PowerPoint lets the text run out to the right of the old, narrow box,
+    LibreOffice grows it around the centre.
+    """
+    m = box_metrics(shape)
+    if m["wrap"] or m["fit"] != "grow" or shape.width is None:
+        return
+    _, widest, _ = text_layout(shape, m)
+    inner = shape.width / EMU_PER_PT - m["w"]          # left + right inset
+    needed = int((widest * 1.05 + inner) * EMU_PER_PT)
+    if needed <= shape.width:
+        return
+    algn = shape.text_frame.paragraphs[0]._p.find(qn("a:pPr"))
+    algn = algn.get("algn", "l") if algn is not None else "l"
+    if algn == "ctr":
+        shape.left = shape.left - (needed - shape.width) // 2
+    elif algn == "r":
+        shape.left = shape.left - (needed - shape.width)
+    shape.width = needed
+
+
 def all_shapes(shapes):
     for sh in shapes:
         yield sh
@@ -246,8 +283,9 @@ def text_frames(shape):
 
 # ---------------------------------------------------------------- per slide
 
-def apply(slide, spec, report):
+def apply(slide, spec, report, n, slide_area):
     shapes = {str(sh.shape_id): sh for sh in all_shapes(slide.shapes)}
+    top_level = list(slide.shapes)
 
     def shape(sid):
         if str(sid) not in shapes:
@@ -258,7 +296,12 @@ def apply(slide, spec, report):
         sh = shape(sid)
         if not getattr(sh, "has_text_frame", False) or not sh.has_text_frame:
             raise ValueError(f"shape id {sid} has no text (use 'tables' or 'images')")
+        cap = capacity(sh, top_level if sh in top_level else (), slide_area)
         fill_text_frame(sh.text_frame, value)
+        grow_to_text(sh)
+        problem = overflow(sh, cap)
+        if problem:
+            report.append(f"  FIT WARNING slide {n} id={sid} {sh.text_frame.text[:40]!r}: {problem}")
     for sid, rows in spec.get("tables", {}).items():
         sh = shape(sid)
         if not getattr(sh, "has_table", False) or not sh.has_table:
@@ -328,7 +371,7 @@ def main():
     report = []
     for n, (slide, spec) in enumerate(zip(result, plan["slides"]), 1):
         try:
-            apply(slide, spec, report)
+            apply(slide, spec, report, n, prs.slide_width * prs.slide_height)
         except (ValueError, OSError) as exc:
             sys.exit(f"plan slide {n} (from {spec['from']}): {exc} — nothing was saved.")
     set_order(prs, result)
@@ -337,6 +380,9 @@ def main():
           f"(from source slides {', '.join(str(s['from']) for s in plan['slides'])})")
     for line in report:
         print(line)
+    if any("FIT WARNING" in line for line in report):
+        print("Shorten the texts marked FIT WARNING (the box or its background shape is sized for the sample) "
+              "and run again; otherwise the text spills over the design.")
     check = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pptx_inventory.py")
     if os.path.exists(check):
         sys.stdout.flush()
