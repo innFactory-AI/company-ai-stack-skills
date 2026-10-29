@@ -411,6 +411,9 @@ bloße Typ `pic` oder die Synonyme `image`/`picture`/`photo`). Als Quellen diene
 | `["a", "b"]`                      | Ein Aufzählungspunkt pro Element, alle auf Ebene 0         |
 | `[{ "text": "sub", "level": 1 }]` | Eingerückter Aufzählungspunkt, `level` 0–8, vom Master gestaltet |
 
+Im Text werden `**fett**`, `*kursiv*` und `~~durchgestrichen~~` formatiert; Schrift, Größe und Farbe bleiben die des
+Layouts. Links erscheinen als „Text (URL)“, nicht klickbar.
+
 Weggelassene Slots bleiben leer und zeigen in PowerPoint den Aufforderungstext des Layouts.
 
 **Optionen für den Basis-Foliensatz:**
