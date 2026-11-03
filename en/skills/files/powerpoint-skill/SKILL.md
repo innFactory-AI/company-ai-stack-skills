@@ -330,7 +330,10 @@ Reading it:
 - **`layoutId` is the stable identifier.** Layout **names repeat** across slide masters
   (a real deck had `Präsentationstitel` 3× across 5 masters). Prefer `layoutId`.
 - **Slot keys are `type` or `type:idx`.** The `idx` matters: `body:12` + `body:13` on the same
-  layout means a two-column layout — fill both to use both columns.
+  layout means a two-column layout — fill both to use both columns. The number does **not** tell
+  you which box is left or on top: `body:13` can be the right column. Check the position (the `at`
+  value of `--lists`, see "Lists come from the template" below), or fill the columns with texts that
+  don't depend on their order.
 - **`role`** is inferred from the layout name (German + English keywords) and its slot
   composition. Roles: `title`, `title-image`, `section`, `content`, `two-content`,
   `title-only`, `closing`, `reference`. `roleMap` picks one layout per role.
@@ -396,16 +399,59 @@ picture inherits its position and size from the layout and is cropped to the slo
 
 **Slot values** accept three shapes:
 
-| Value                             | Result                                           |
-| --------------------------------- | ------------------------------------------------ |
-| `"one line"`                      | One paragraph; `\n` splits into paragraphs       |
-| `["a", "b"]`                      | One bullet per item, all at level 0              |
-| `[{ "text": "sub", "level": 1 }]` | Nested bullet, `level` 0–8, styled by the master |
+| Value                             | Result                                              |
+| --------------------------------- | --------------------------------------------------- |
+| `"one line"`                      | One paragraph at level 0; `\n` splits into paragraphs |
+| `["a", "b"]`                      | One paragraph per item, all at level 0              |
+| `[{ "text": "sub", "level": 1 }]` | One paragraph at `level` 0–8                        |
 
 Inline `**bold**`, `*italic*` and `~~strikethrough~~` are formatted; font, size and colour stay the layout's. Links
 appear as "text (url)", not clickable.
 
 Omitted slots stay empty and show the layout prompt in PowerPoint.
+
+**Lists come from the template, not from you.** The tool writes no bullet or numbering settings.
+Every paragraph takes the marker of its level from the placeholder's list style in the master: a
+bullet, a number, or nothing. A string and an array look **the same**. The array only splits the
+text into paragraphs; it does not switch bullets on or off. That means:
+
+- **Never type list markers.** No `•`, `-`, `–`, `*`, `1.`, `a)` or `→` at the start of a line. On a
+  bulleted level you get `• • text` or `• 1. text`. Write the bare text and let the template mark it.
+- **A paragraph cannot switch its bullet off.** In a placeholder whose level 0 is bulleted, every
+  level-0 line gets a bullet, including a heading or an intro sentence. Put headings into the
+  layout's `title`/`ctrTitle` slot, or into a layout that has a heading slot or a level without a
+  marker. Don't write "OPTION A" as the first bullet of a column.
+- **Numbered or plain lines need a level or slot that is styled that way.** If the template numbers a
+  level, use it; otherwise the list is bulleted, so don't add your own numbers. Agenda items, steps
+  and chapter numbers go into slots that are not bulleted. If none fits, write the items without
+  numbers.
+- **Many corporate masters use level 0 for plain text and level 1 for bullets** (sample text "Edit
+  Master text styles / Second level …"). On such a master, write intro text at level 0 and the list
+  items with `"level": 1`.
+
+You cannot see from `describe_pptx_template` which level is bulleted. With code execution, read it from
+the template (see below). Without code, follow the rules above. After building, read the deck back
+with `read_powerpoint_slides`: lines that start with `•`, `-` or a number you typed are a mistake. Tell
+the user that bullets come from the template, and ask them to check one content slide.
+
+**If code execution is available**, look up the list style and position of every slot before
+you plan. Attach the template (`attach_template_to_chat`, see **templates-skill**) and run the
+bundled script. It is only there when the skill was installed as a package (zip / sync):
+
+```bash
+python3 /mnt/data/skills/powerpoint-skill/scripts/pptx_inventory.py "/mnt/data/<template>.pptx" --lists
+```
+
+```text
+== slideLayout9.xml "Text_Box_OB"
+  body:13      at 52%,30%  L0=bullet '•'  L1=bullet '–'  L2=none …
+  body:14      at  5%,30%  L0=bullet '•'  L1=bullet '–'  L2=none …
+```
+
+`L0=bullet` = level-0 lines get a bullet. `L0=number arabicPeriod` = numbered. `L0=none` = plain
+text. A bullet shown as `'§'` or `'n'` is a symbol-font character (a square, a dash, …), still a
+bullet. `at x%,y%` is the slot's top-left corner: here `body:14` is the **left** column, although
+its number is higher. If the script is missing, follow the rules above without it.
 
 **Base deck options:**
 
@@ -730,6 +776,9 @@ the keys still free. Pass `include_layouts: false` for a text-only read of a ver
   wrong — re-read `describe_pptx_template` rather than guessing. Common synonyms are accepted
   (`title` for a `ctrTitle` placeholder, `subtitle` for `subTitle`, `content`/`bullets` for
   `body`), but exact slot keys are always safest.
+- **Typed list markers double up.** `"• Point"` or `"1. Point"` in a layout slot shows as `• • Point`
+  or `• 1. Point`, because the template's list style adds its own marker. Bullets and numbers
+  come only from the template (see "Lists come from the template").
 - **A synonym fills one slot, not all matching ones.** On a layout with two body placeholders
   (`body:12`, `body:13`) a single `bullets` fills the **first free** one and reports the other in
   `emptySlots` — it is not duplicated into both. To fill both columns, address them by exact key.
@@ -842,6 +891,9 @@ A single run that exercises every slide feature. Useful for verifying a deployme
     `append_slides_to_powerpoint`, and the deck's slide count is unchanged.
 26. `add_slides_from_layouts` with `insert_after` beyond the slide count → error naming the real
     count.
+27. `pptx_inventory.py <corporate master> --lists` → one line per text slot with `at x%,y%` and
+    `L0`…`L4`; a slot whose master level 0 is bulleted shows `L0=bullet`. Fill it with
+    `["Point A", "Point B"]` (no typed `•`) → PowerPoint shows exactly one bullet per line.
 
 `MANUAL_TESTS.md` §4.6 (corporate master) and §4.9 (deck attached in the chat) hold these
 scenarios as ready-to-run cURL commands.

@@ -339,7 +339,10 @@ So liest du das:
 - **`layoutId` ist der stabile Bezeichner.** Layout-**Namen wiederholen sich** über Folienmaster
   hinweg (ein echter Foliensatz hatte `Präsentationstitel` 3× verteilt auf 5 Master). Bevorzuge `layoutId`.
 - **Slot-Keys lauten `type` oder `type:idx`.** Der `idx` zählt: `body:12` + `body:13` im selben
-  Layout bedeutet ein zweispaltiges Layout – befülle beide, um beide Spalten zu nutzen.
+  Layout bedeutet ein zweispaltiges Layout – befülle beide, um beide Spalten zu nutzen. Die Nummer
+  sagt **nicht**, welcher Kasten links oder oben steht: `body:13` kann die rechte Spalte sein. Prüfe
+  die Position (der `at`-Wert von `--lists`, siehe „Listen kommen aus der Vorlage“ unten) oder
+  befülle die Spalten mit Texten, deren Reihenfolge egal ist.
 - **`role`** wird aus dem Layoutnamen (deutsche + englische Schlüsselwörter) und der Zusammensetzung
   seiner Slots abgeleitet. Rollen: `title`, `title-image`, `section`, `content`, `two-content`,
   `title-only`, `closing`, `reference`. `roleMap` wählt pro Rolle ein Layout.
@@ -407,14 +410,62 @@ bloße Typ `pic` oder die Synonyme `image`/`picture`/`photo`). Als Quellen diene
 
 | Wert                              | Ergebnis                                                   |
 | --------------------------------- | ---------------------------------------------------------- |
-| `"one line"`                      | Ein Absatz; `\n` teilt in mehrere Absätze                  |
-| `["a", "b"]`                      | Ein Aufzählungspunkt pro Element, alle auf Ebene 0         |
-| `[{ "text": "sub", "level": 1 }]` | Eingerückter Aufzählungspunkt, `level` 0–8, vom Master gestaltet |
+| `"one line"`                      | Ein Absatz auf Ebene 0; `\n` teilt in mehrere Absätze      |
+| `["a", "b"]`                      | Ein Absatz pro Element, alle auf Ebene 0                   |
+| `[{ "text": "sub", "level": 1 }]` | Ein Absatz auf Ebene `level` 0–8                           |
 
 Im Text werden `**fett**`, `*kursiv*` und `~~durchgestrichen~~` formatiert; Schrift, Größe und Farbe bleiben die des
 Layouts. Links erscheinen als „Text (URL)“, nicht klickbar.
 
 Weggelassene Slots bleiben leer und zeigen in PowerPoint den Aufforderungstext des Layouts.
+
+**Listen kommen aus der Vorlage, nicht von dir.** Das Tool schreibt keine eigenen Aufzählungs- oder
+Nummerierungseinstellungen. Jeder Absatz übernimmt das Zeichen seiner Ebene aus dem Listenformat des
+Platzhalters im Master: einen Aufzählungspunkt, eine Nummer oder nichts. Ein String und ein Array
+sehen **gleich** aus. Das Array teilt den Text nur in Absätze; es schaltet keine Aufzählung ein oder
+aus. Das heißt:
+
+- **Tippe nie selbst Listenzeichen.** Kein `•`, `-`, `–`, `*`, `1.`, `a)` oder `→` am Zeilenanfang.
+  Auf einer Ebene mit Aufzählungszeichen entsteht sonst `• • Text` oder `• 1. Text`. Schreib den
+  reinen Text, die Vorlage setzt das Zeichen.
+- **Ein Absatz kann sein Aufzählungszeichen nicht abschalten.** In einem Platzhalter, dessen Ebene 0
+  Aufzählungszeichen hat, bekommt jede Zeile auf Ebene 0 einen Punkt, auch eine Überschrift oder ein
+  Einleitungssatz. Überschriften gehören in den `title`-/`ctrTitle`-Slot des Layouts oder in ein
+  Layout mit eigenem Überschrift-Slot oder einer Ebene ohne Zeichen. Schreib „OPTION A“ nicht als
+  ersten Punkt einer Spalte.
+- **Nummerierte oder schlichte Zeilen brauchen eine Ebene oder einen Slot, der so formatiert ist.**
+  Nummeriert die Vorlage eine Ebene, nutze sie; sonst ist die Liste eine Aufzählung, also setz keine
+  eigenen Nummern dazu. Agendapunkte, Schritte und Kapitelnummern gehören in Slots ohne
+  Aufzählungszeichen. Passt keiner, schreib die Punkte ohne Nummern.
+- **Viele Firmen-Master nutzen Ebene 0 für Fließtext und Ebene 1 für Aufzählungen** (Beispieltext
+  „Mastertextformat bearbeiten / Zweite Ebene …“). Bei so einem Master schreibst du Einleitungstext
+  auf Ebene 0 und die Listenpunkte mit `"level": 1`.
+
+Welche Ebene Aufzählungszeichen hat, zeigt `describe_pptx_template` nicht. Mit Code-Ausführung liest
+du es aus der Vorlage (siehe unten), ohne Code hältst du dich an die Regeln oben. Lies das Deck nach
+dem Erstellen mit `read_powerpoint_slides` zurück: Zeilen, die mit einem selbst getippten `•`, `-`
+oder einer Nummer beginnen, sind ein Fehler. Sag dem Nutzer, dass die Aufzählungszeichen aus der
+Vorlage kommen, und bitte ihn, eine Inhaltsfolie zu prüfen.
+
+**Wenn Code-Ausführung verfügbar ist**, lies Listenformat und Position jedes Slots aus, bevor du
+planst. Hänge die Vorlage an (`attach_template_to_chat`, siehe **templates-skill**) und führe das
+mitgelieferte Skript aus. Es ist nur da, wenn der Skill als Paket installiert wurde (Zip / Sync):
+
+```bash
+python3 /mnt/data/skills/powerpoint-skill/scripts/pptx_inventory.py "/mnt/data/<vorlage>.pptx" --lists
+```
+
+```text
+== slideLayout9.xml "Text_Box_OB"
+  body:13      at 52%,30%  L0=bullet '•'  L1=bullet '–'  L2=none …
+  body:14      at  5%,30%  L0=bullet '•'  L1=bullet '–'  L2=none …
+```
+
+`L0=bullet` = Zeilen auf Ebene 0 bekommen einen Aufzählungspunkt, `L0=number arabicPeriod` =
+nummeriert, `L0=none` = schlichter Text. Ein Zeichen wie `'§'` oder `'n'` stammt aus einer
+Symbolschrift (Quadrat, Strich, …) und ist trotzdem ein Aufzählungszeichen. `at x%,y%` ist die linke
+obere Ecke des Slots: Hier ist `body:14` die **linke** Spalte, obwohl die Nummer höher ist. Fehlt das
+Skript, gelten die Regeln oben ohne es.
 
 **Optionen für den Basis-Foliensatz:**
 
@@ -754,6 +805,10 @@ Foliensatzes (nur `slideNumber`, `title`, `textLines`).
   war – lies `describe_pptx_template` erneut, statt zu raten. Gängige Synonyme werden akzeptiert
   (`title` für einen `ctrTitle`-Platzhalter, `subtitle` für `subTitle`, `content`/`bullets` für
   `body`), exakte Slot-Keys sind aber immer am sichersten.
+- **Getippte Listenzeichen verdoppeln sich.** `"• Punkt"` oder `"1. Punkt"` in einem Layout-Slot
+  erscheint als `• • Punkt` oder `• 1. Punkt`, weil das Listenformat der Vorlage ein eigenes Zeichen
+  setzt. Aufzählungszeichen und Nummern kommen nur aus der Vorlage (siehe „Listen kommen aus der
+  Vorlage“).
 - **Ein Synonym befüllt einen Slot, nicht alle passenden.** Bei einem Layout mit zwei
   Body-Platzhaltern (`body:12`, `body:13`) befüllt ein einzelnes `bullets` den **ersten freien** und
   meldet den anderen in `emptySlots` – es wird nicht in beide dupliziert. Um beide Spalten zu befüllen,
@@ -868,6 +923,9 @@ Ein einziger Durchlauf, der alle Folienfunktionen abdeckt. Nützlich, um ein Dep
     `append_slides_to_powerpoint` nennt, und die Folienanzahl des Foliensatzes bleibt unverändert.
 26. `add_slides_from_layouts` mit `insert_after` jenseits der Folienanzahl → Fehler mit der
     tatsächlichen Anzahl.
+27. `pptx_inventory.py <Firmen-Master> --lists` → eine Zeile pro Text-Slot mit `at x%,y%` und
+    `L0`…`L4`; ein Slot, dessen Master-Ebene 0 Aufzählungszeichen hat, zeigt `L0=bullet`. Befülle ihn
+    mit `["Punkt A", "Punkt B"]` (ohne getipptes `•`) → PowerPoint zeigt genau einen Punkt pro Zeile.
 
 `MANUAL_TESTS.md` §4.6 (Corporate-Master) und §4.9 (im Chat angehängter Foliensatz) enthalten diese
 Szenarien als direkt ausführbare cURL-Befehle.

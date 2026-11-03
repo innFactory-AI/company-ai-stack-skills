@@ -4,6 +4,7 @@ Usage:
   python3 pptx_inventory.py DECK.pptx                 # all slides
   python3 pptx_inventory.py DECK.pptx --slides 2-5,8  # some slides (big decks: stdout is limited)
   python3 pptx_inventory.py DECK.pptx --check         # only report leftover dummy text; exit 2 if any
+  python3 pptx_inventory.py DECK.pptx --lists         # per layout + text slot: position, bullet/number/none per level
 
 Output per slide: layout name, then one line per shape:
   id=<shape id> <kind> "<name>" followed by its paragraphs as  [0] text  [1] text ...
@@ -288,12 +289,90 @@ def clip(text, n=90):
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
+P_NS = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+TEXT_PH = {"title", "ctrTitle", "subTitle", "body", "obj"}
+MASTER_PH = {"ctrTitle": "title", "subTitle": "body", "obj": "body"}
+MASTER_STYLE = {"title": "titleStyle", "ctrTitle": "titleStyle", "body": "bodyStyle",
+                "subTitle": "bodyStyle", "obj": "bodyStyle"}
+
+
+def ph_of(sp):
+    ph = sp.find(f"{P_NS}nvSpPr/{P_NS}nvPr/{P_NS}ph")
+    if ph is None:
+        return None
+    return ph.get("type", "body"), ph.get("idx")
+
+
+def level_marker(lst_style, lvl):
+    """Marker a list style defines for one level, or None when that level leaves it to the parent."""
+    if lst_style is None:
+        return None
+    ppr = lst_style.find(f"{A_NS}lvl{lvl + 1}pPr")
+    if ppr is None:
+        return None
+    if ppr.find(A_NS + "buNone") is not None:
+        return "none"
+    num = ppr.find(A_NS + "buAutoNum")
+    if num is not None:
+        return "number " + num.get("type", "")
+    char = ppr.find(A_NS + "buChar")
+    if char is not None:
+        return f"bullet '{char.get('char', '')}'"
+    if ppr.find(A_NS + "buBlip") is not None:
+        return "bullet (picture)"
+    return None
+
+
+def lists_report(prs, levels=5):
+    """Per layout and text placeholder: bullet / number / none for each level, resolved like PowerPoint
+    does (layout placeholder → master placeholder → master text style). This is what a layout-tool slot
+    value gets: companyFILES writes no bullet settings of its own."""
+    print("Per slot: 'at x%,y%' = top-left corner on the slide (smaller x = further left), then the marker\n"
+          "per level: L0 = top level (no 'level' / level 0), L1 = level 1, …  "
+          "Layout ids and slot keys match describe_pptx_template.")
+    for master in prs.slide_masters:
+        m_el = master._element
+        m_ph = {}
+        for sp in m_el.iter(P_NS + "sp"):
+            key = ph_of(sp)
+            if key:
+                m_ph.setdefault(key[0], sp.find(f"{P_NS}txBody/{A_NS}lstStyle"))
+        tx = m_el.find(P_NS + "txStyles")
+        for layout in master.slide_layouts:
+            layout_id = str(layout.part.partname).rsplit("/", 1)[-1]
+            rows = []
+            for ph in layout.placeholders:
+                sp = ph._element
+                key = ph_of(sp)
+                if not key or key[0] not in TEXT_PH:
+                    continue
+                typ, idx = key
+                chain = [sp.find(f"{P_NS}txBody/{A_NS}lstStyle"),
+                         m_ph.get(MASTER_PH.get(typ, typ)),
+                         tx.find(P_NS + MASTER_STYLE[typ]) if tx is not None else None]
+                marks = []
+                for lvl in range(levels):
+                    mark = next((m for m in (level_marker(s, lvl) for s in chain) if m), "none")
+                    marks.append(f"L{lvl}={mark}")
+                slot = f"{typ}:{idx}" if idx is not None else typ
+                where = ""
+                if ph.left is not None and ph.top is not None:
+                    where = f"at {100 * ph.left // prs.slide_width:>2}%,{100 * ph.top // prs.slide_height:>2}%  "
+                rows.append(f"  {slot:<12} {where}" + "  ".join(marks))
+            if rows:
+                print(f"\n== {layout_id} \"{layout.name}\"")
+                print("\n".join(rows))
+
+
 def main():
     args = sys.argv[1:]
     if not args:
         print(__doc__)
         sys.exit(1)
     path = args[0]
+    if "--lists" in args:
+        lists_report(Presentation(path))
+        return
     check = "--check" in args
     spec = args[args.index("--slides") + 1] if "--slides" in args else None
     prs = Presentation(path)
