@@ -402,6 +402,9 @@ picture inherits its position and size from the layout and is cropped to the slo
 | `["a", "b"]`                      | One bullet per item, all at level 0              |
 | `[{ "text": "sub", "level": 1 }]` | Nested bullet, `level` 0–8, styled by the master |
 
+Inline `**bold**`, `*italic*` and `~~strikethrough~~` are formatted; font, size and colour stay the layout's. Links
+appear as "text (url)", not clickable.
+
 Omitted slots stay empty and show the layout prompt in PowerPoint.
 
 **Base deck options:**
