@@ -12,6 +12,7 @@ catalog.json                                   # categories, order, index texts 
 <locale>/skills/<category>/<slug>/SKILL.md     # the skill: what users upload in companyGPT under "Skills"
 <locale>/skills/<category>/<slug>/references/… # optional bundled files (Markdown recipes; optionally scripts/…)
 <locale>/pages/<category>/<slug>.md            # docs wrapper: title, description, sidebar label, intro
+<locale>/agents/<agent-id>.yaml                # ready-made companyGPT agent exports
 ```
 
 - **Package = the skill folder.** Put nothing docs-only into it: companyADMIN Library Sync imports every file in a
@@ -22,6 +23,9 @@ catalog.json                                   # categories, order, index texts 
   also copied read-only to `/mnt/data/skills/<name>/…` in the sandbox. A skill pasted or uploaded as a single
   `SKILL.md` has no bundled files.
 
+- `<locale>/agents/` holds agent exports. DE and EN files share the same id, tools, MCP servers, skills and
+  subagents; only `name`, `description` and `instructions` are translated. Every name under `skills:` must match a
+  `name:` in this repo.
 - `<locale>` is `de` and `en`. Every skill exists in **both**, with the same `<category>/<slug>`.
 - `<slug>` is the docs URL (`/de/tutorials/skills/<category>/<slug>`). Don't rename a slug once it is live; links
   and bookmarks point at it.

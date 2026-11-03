@@ -17,6 +17,7 @@ de/skills/<category>/<skill-name>/SKILL.md     # German skill
 en/skills/<category>/<skill-name>/SKILL.md     # English skill
 <locale>/skills/<category>/<skill-name>/references/  # optional bundled files (part of the skill package)
 <locale>/pages/<category>/<skill-name>.md      # docs page wrapper (title, label, intro)
+<locale>/agents/<agent-id>.yaml               # ready-made agent configs (DemoGPT, Researcher)
 ```
 
 Every skill carries YAML frontmatter with a `name` (required) and `description`. The `name` slug is
