@@ -24,7 +24,9 @@ Benutzer will ein Diagramm im Chat SEHEN       → show_interactive_chart   (IMM
 Benutzer will eine Grafik im Chat SEHEN        → show_interactive_diagram  (IMMER bevorzugt)
 Benutzer will Standorte auf einer Karte SEHEN  → show_interactive_map
 
-Benutzer will ein Diagramm als Dokument SPEICHERN...
+Benutzer will ein Diagramm in einer PowerPoint → natives Diagramm: slides[].chart / charts (powerpoint-skill)
+                                                 in PowerPoint bearbeitbar, kein Bild
+Benutzer will ein Diagramm als Word/PDF/ODT SPEICHERN...
   Diagramm + optionaler Beschreibungstext      → create_chart_document
   Diagramm in einem Dokument (mehr Kontrolle)  → embed_chart_in_document
 
@@ -184,10 +186,36 @@ Unterstützte Typen: `bar`, `line`, `pie`, `doughnut`, `radar`, `scatter`, `bubb
 
 `document_type`-Optionen: `word`, `powerpoint`, `pdf`
 
+### Diagramm in einer PowerPoint: nativ, nicht als Bild
+
+Für `.pptx` nimmst du das native, bearbeitbare Diagramm der PowerPoint-Tools statt `create_chart_document` /
+`embed_chart_in_document` (die rendern ein Bild). Die Daten sind dieselben wie bei `show_interactive_chart`
+(`labels` + `datasets`), der Schlüssel heißt aber `type` (nicht `chart_type`), und die Typen sind `bar`,
+`horizontalBar`, `stackedBar`, `line`, `area`, `pie`, `doughnut`, `scatter`, `radar` (kein
+`bubble`/`polarArea`/`waterfall`/`funnel`; dafür `create_chart_document`). `scatter` nimmt numerische Labels als
+x-Werte. Generierter Foliensatz (`create_powerpoint`, `append_slides_to_powerpoint`, `update_powerpoint_slide`):
+
+```json
+{
+  "slides": [
+    {
+      "type": "default",
+      "title": "Umsatz je Quartal",
+      "chart": { "type": "bar", "labels": ["Q1", "Q2", "Q3"], "datasets": [{ "label": "2026", "data": [12, 15, 19] }] }
+    }
+  ]
+}
+```
+
+Corporate-Foliensatz (`create_powerpoint_from_layouts`, `add_slides_from_layouts`, `set_powerpoint_slide_fields`):
+dasselbe Objekt je Slot in `charts`, z. B. `"charts": { "chart:15": { "type": "bar", … } }`; der Slot muss in
+`describe_pptx_template` `acceptsChart` melden. Details: powerpoint-skill.
+
 ## Wichtige Hinweise
 
 - `show_interactive_chart` und `show_interactive_diagram` liefern ein **Widget** (in LibreChat gerendert) und zusätzlich eine Textzeile wie `Interactive chart: [Title](viewer-url) · [Download PNG](url)` (`Interactive diagram: …` bei Grafiken). Gib diese als normale Markdown-Links weiter – bette die Download-URL **niemals** als Bild ein (`![](…)`): Sie ist ein authentifizierter Download-Endpunkt, kein Bild, das der Browser laden kann. Konnte der PNG-Fallback nicht gerendert werden, enthält die Zeile nur den Viewer-Link.
 - Die Tools zum Einbetten in Dokumente liefern `{id, filename, downloadUrl, markdownLink}` (plus `librechat_file_id`, wenn das Dokument zusätzlich als Chat-Datei gespeichert wird) – gib immer `markdownLink` aus.
 - Die Farbpalette der Organisation bzw. des Benutzers wird automatisch auf die Diagrammfarben angewendet, wenn sie in den Einstellungen konfiguriert ist.
 - Google-Gemini-Modelle können keine interaktiven Widgets rendern – die Antworten fallen dann auf Text/JSON-Daten zurück.
+- `create_chart_document` und `embed_chart_in_document` mit `powerpoint` erzeugen ein Bild, kein bearbeitbares Diagramm. Für Foliensätze bevorzuge das native Diagramm.
 - `show_interactive_chart` und `create_chart_document` akzeptieren alle 13 Diagrammtypen; `area`, `stackedBar` und `horizontalBar` werden beim Rendern als Bild auf ihre statischen Entsprechungen abgebildet. `embed_chart_in_document` akzeptiert nur die 8 Basistypen und lehnt die erweiterten ab – verwende dafür `create_chart_document`.

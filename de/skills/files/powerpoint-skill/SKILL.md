@@ -256,8 +256,34 @@ gezeichnet – nützlich für Entwürfe.
 ```
 
 `bullets` ist hier ein flaches `string[]` – für eingerückte Aufzählungen nutzt du Weg C (`level`)
-oder eine Vorlage. Das Feld `image` nimmt eine base64-Data-URI oder eine öffentliche http(s)-URL –
-nicht `doc:`/`lc:` (siehe §6).
+oder eine Vorlage. Das Feld `image` nimmt `lc:<file_id>` (Chat-Anhang oder erzeugtes Bild, siehe
+`list_my_files`), `doc:<document_id>`, eine base64-Data-URI oder eine öffentliche http(s)-URL (siehe §6).
+
+**Natives Diagramm auf einer Folie:** Ergänze `chart` auf einer `default`-Folie (unter dem Text) oder einer
+`text-image`-Folie (ersetzt das Bild – nimm `image` **oder** `chart`, nicht beides). Es ist ein echtes,
+bearbeitbares PowerPoint-Diagramm („Daten bearbeiten“ öffnet die Zahlen in Excel) in den Farben und der
+Schrift der Corporate Identity. `section`-Folien zeigen keines. Die Daten haben dieselbe Form wie bei
+`show_interactive_chart`:
+
+```json
+{
+  "type": "default",
+  "title": "Umsatz je Quartal",
+  "bullets": ["Q3 ist das stärkste Quartal"],
+  "chart": {
+    "type": "bar",
+    "labels": ["Q1", "Q2", "Q3"],
+    "datasets": [{ "label": "2026", "data": [12, 15, 19] }],
+    "showValues": true
+  }
+}
+```
+
+`chart.type`: `bar`, `horizontalBar`, `stackedBar`, `line`, `area`, `pie`, `doughnut`, `scatter`, `radar`
+(`pie`/`doughnut` zeigen nur die erste Datenreihe). Optional: `title`, `showLegend`, `showValues`,
+`numberFormat` (Excel-Format, z. B. `"#,##0"`), `xAxisTitle`, `yAxisTitle`. Grenzen: höchstens 20 Datenreihen
+mit je 1000 Punkten; jede Datenreihe braucht genau eine Zahl je Label, sonst bricht das Tool ab und nennt die
+Datenreihe. Funktioniert auch in `append_slides_to_powerpoint` und `update_powerpoint_slide`.
 
 ### Formatierte Tabellen – `htmlTable`
 
@@ -352,6 +378,8 @@ So liest du das:
   `fields`. `aspectRatio` (Breite ÷ Höhe des Slot-Rahmens) zeigt dir, was sich gut zuschneiden lässt –
   das Bild wird mittig auf dieses Verhältnis zugeschnitten, nie verzerrt. Ein Slot, für den du kein
   Bild übergibst, bleibt leer und erscheint in `imageSlotsNotFilled`; versprich dem Nutzer dann kein Bild.
+- **`acceptsChart`-Slots** (Platzhaltertypen `chart`, `obj`, `body`) erhalten ein natives Diagramm über das
+  separate Argument `charts` (siehe „Diagramme“ unten). `read_powerpoint_slides` meldet `acceptsChart` ebenfalls.
 
 ### Schritt 2 – `create_powerpoint_from_layouts`
 
@@ -405,6 +433,31 @@ bloße Typ `pic` oder die Synonyme `image`/`picture`/`photo`). Als Quellen diene
 
 `{ "document_id": "..." }` (ein PVC-Upload) und `{ "base64": "..." }` funktionieren genauso. Das Bild
 übernimmt Position und Größe aus dem Layout und wird auf das Seitenverhältnis des Slots zugeschnitten.
+Auch einfache Strings gehen: `"images": { "pic:14": "lc:abc-attachment-id" }` (ebenso `doc:<document_id>`
+oder eine `data:image/…`-URI). Eine nicht auflösbare `lc:`/`doc:`-Referenz bricht den Aufruf ab, der
+Fehler nennt sie.
+
+**Diagramme** gehören in ein `charts`-Objekt pro Folie, mit Keys wie bei `fields` (exakter Slot-Key wie
+`chart:15` oder der bloße Typ; `content`/`chart` nehmen den ersten freien Chart-, Obj- oder Body-Slot).
+Das Diagramm füllt den Rahmen des Slots (aus dem Layout, sonst aus dem Folienmaster; ohne Rahmen ein Fehler
+mit dem Slot-Namen) in den Theme-Farben (Design → Farben) und der Theme-Schrift des Decks. Ein Slot nimmt ein
+Feld **oder** ein Diagramm, nicht beides. Dasselbe Diagrammobjekt wie bei `slides[].chart` oben:
+
+```json
+{
+  "layout": "Diagramm",
+  "fields": { "title": "Umsatz je Quartal" },
+  "charts": {
+    "chart:15": {
+      "type": "bar",
+      "labels": ["Q1", "Q2", "Q3"],
+      "datasets": [{ "label": "2026", "data": [12, 15, 19] }]
+    }
+  }
+}
+```
+
+`charts` funktioniert genauso in `add_slides_from_layouts` und `set_powerpoint_slide_fields`.
 
 **Slot-Werte** akzeptieren drei Formen:
 
@@ -755,21 +808,24 @@ Foliensatzes (nur `slideNumber`, `title`, `textLines`).
   sodass der Foliensatz **zwei** Folien hat. Das Ergebnis ist ein Foliensatz – hänge mit
   `append_slides_to_powerpoint` weiter daran an. Seine `id` ist eine `.pptx`, **kein Bild**: Als
   `doc:<id>` oder als Bild-`document_id` übergeben, wird sie als „not an image“ abgelehnt.
-- **Diagramm auf einer Inhaltsfolie:** Nimm ein gespeichertes Diagrammbild (z. B. ein hochgeladenes
-  PNG – seine Dokument-id) und referenziere es als `![chart](doc:<id>)` im Markdown von
-  `create_powerpoint`, über einen `{%name}`-Bildplatzhalter in einer `{{}}`-Vorlage oder über einen
-  Layout-Bild-Slot (`images`, Weg C).
+- **Diagramm auf einer Inhaltsfolie:** Nimm das native Diagramm – `slides[].chart` (generierte Decks, §3)
+  oder `charts` je Slot (Corporate-Decks, Weg C). Es bleibt in PowerPoint bearbeitbar. Nur wenn ein Bild
+  gewünscht ist (oder das Deck eine `{{}}`-Vorlage ist, in der `charts` nur Datenreihen umbenennt),
+  referenziere ein gespeichertes Diagrammbild als `![chart](doc:<id>)` im Markdown, über einen
+  `{%name}`-Bildplatzhalter in einer `{{}}`-Vorlage oder über einen Layout-Bild-Slot (`images`, Weg C).
 - **Bildquellen** unterscheiden sich je nach Tool:
   - Markdown in `create_powerpoint`: `doc:<documentId>` (gespeichertes Bild), `lc:<file_id>`
     (LibreChat-Anhang – siehe `list_my_files`), eine base64-Data-URI oder eine öffentliche http(s)-URL.
   - `image`-Felder in `slides[]` sowie Markdown in `append_slides_to_powerpoint` /
-    `update_powerpoint_slide`: nur eine base64-Data-URI (`data:image/…`) oder eine öffentliche
-    http(s)-URL. Eine `doc:`/`lc:`-Referenz wird dort nicht aufgelöst – die Folie zeigt stattdessen
-    einen Text `[Image: …]`.
+    `update_powerpoint_slide`: `lc:<file_id>`, `doc:<document_id>`, eine base64-Data-URI
+    (`data:image/…`) oder eine öffentliche http(s)-URL. Bevorzuge `lc:`/`doc:` statt base64. Eine nicht
+    auflösbare `lc:`/`doc:`-Referenz in `slides[].image` ist ein Fehler, der sie nennt; im Markdown fällt
+    die Folie auf den Alt-Text zurück.
   - http(s)-Bilder müssen von einem **öffentlich erreichbaren** Host stammen; interne oder private
     Adressen werden abgelehnt.
   - `{%name}`-Vorlagenbilder und Layout-Bild-Slots (`images`) nehmen
-    `{ base64 | document_id | librechat_file_id }`.
+    `{ base64 | document_id | librechat_file_id }`; `images` der Layout-Tools nehmen auch die Strings
+    `lc:…`, `doc:…` oder `data:image/…`.
 - Siehe **charts-diagrams-skill** für das Erstellen von Diagrammen, **templates-skill** für
   `{%image}`-Platzhalter, `charts` (benennt nur Datenreihen um – die Diagrammdaten der Vorlage bleiben)
   und `repeat`.
