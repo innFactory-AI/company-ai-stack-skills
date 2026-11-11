@@ -26,7 +26,7 @@ Benutzer will Standorte auf einer Karte SEHEN  → show_interactive_map
 
 Benutzer will ein Diagramm in einer PowerPoint → natives Diagramm: slides[].chart / charts (powerpoint-skill)
                                                  in PowerPoint bearbeitbar, kein Bild
-Benutzer will ein Diagramm als Word/PDF/ODT SPEICHERN...
+Benutzer will ein Diagramm als Word/PDF SPEICHERN...
   Diagramm + optionaler Beschreibungstext      → create_chart_document
   Diagramm in einem Dokument (mehr Kontrolle)  → embed_chart_in_document
 

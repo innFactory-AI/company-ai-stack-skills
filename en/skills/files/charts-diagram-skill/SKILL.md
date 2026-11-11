@@ -26,7 +26,7 @@ User wants to SEE locations on a map         → show_interactive_map
 
 User wants a chart in a PowerPoint deck      → native chart: slides[].chart / charts (powerpoint-skill)
                                                editable in PowerPoint, not a picture
-User wants to SAVE a chart as Word/PDF/ODT...
+User wants to SAVE a chart as Word/PDF...
   Chart + optional description text          → create_chart_document
   Chart embedded in a doc (more control)     → embed_chart_in_document
 
