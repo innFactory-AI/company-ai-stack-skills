@@ -136,6 +136,7 @@ tools:
   - list_documents_mcp_Files
   - search_documents_mcp_Files
   - list_templates_mcp_Files
+  - list_image_templates_mcp_Files
   - create_word_from_template_mcp_Files
   - create_excel_from_template_mcp_Files
   - fill_excel_template_mcp_Files

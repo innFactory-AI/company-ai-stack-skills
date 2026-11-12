@@ -84,7 +84,7 @@ Nutzer möchte ein Firmendokument / Formular in seinem eigenen Layout BEFÜLLEN.
 }
 ```
 
-Unterstützt Inline-Bilder über die URI `doc:<documentId>` (gespeichertes companyFILES-Dokument) oder `lc:<file_id>` (LibreChat-Anhang): `<img src="doc:abc123..." />`. Dieselbe Syntax funktioniert in Markdown für `create_word`: `![alt](doc:<uuid>)` oder `![alt](lc:<file_id>)`.
+Unterstützt Inline-Bilder über die URI `doc:<documentId>` (gespeichertes companyFILES-Dokument), `lc:<file_id>` (LibreChat-Anhang) oder `img:<name>` (Bildbibliothek, siehe `list_image_templates` im **templates-skill**): `<img src="doc:abc123..." />`. Dieselbe Syntax funktioniert in Markdown für `create_word`: `![alt](doc:<uuid>)`, `![alt](lc:<file_id>)` oder `![alt](img:<name>)`. Ein unbekannter `img:`-Name bricht den Aufruf mit einem Fehler ab, der ihn nennt.
 
 ### create_word_from_json
 
@@ -292,8 +292,8 @@ Kein Tool befüllt so ein Dokument in seinem eigenen Layout. Sag das dem Nutzer 
 
 - Alle Erstellungstools liefern `{id, filename, downloadUrl, markdownLink}` (plus `librechat_file_id`, wenn das Dokument zusätzlich als Chat-Datei gespeichert wird) — gib `markdownLink` immer in der Antwort aus.
 - Die direkt bearbeitenden Tools (`append_to_word`, `replace_word_content`) liefern bei einem companyFILES-Dokument dieselbe `id` und einen aktualisierten `markdownLink`. Bei einem direkt aktualisierten Chat-Anhang (`librechat_file_id`) liefern sie nur `{librechat_file_id, filename, message}` — es gibt keinen Download-Link; teile dem Nutzer mit, dass die angehängte Datei aktualisiert wurde. Lässt sich der Anhang nicht direkt aktualisieren, wird die geänderte Kopie als **neues** Dokument gespeichert und dessen neue `id`/`markdownLink` zurückgegeben — verwende ab dann diese id.
-- Inline-Bilder lassen sich über `doc:<documentId>` oder `lc:<file_id>` im Markdown oder HTML der Erstellungstools (`create_word`, `create_word_from_html`, `create_odt`, `create_odt_from_html`) referenzieren — SVG wird für Word automatisch in PNG umgewandelt. `append_to_word` und `replace_word_content` lösen diese Referenzen nicht auf.
+- Inline-Bilder lassen sich über `doc:<documentId>`, `lc:<file_id>` oder `img:<name>` (Bildbibliothek) im Markdown oder HTML der Erstellungstools (`create_word`, `create_word_from_html`, `create_odt`, `create_odt_from_html`) referenzieren — SVG wird für Word automatisch in PNG umgewandelt. `append_to_word` und `replace_word_content` lösen diese Referenzen nicht auf.
 - Nicht gesetzte Seiten-/Kopf-/Fußzeilenoptionen greifen auf die Theme-Standards der Organisation bzw. des Benutzers zurück (z. B. `defaultPageSize`, `defaultHeaderText`, `defaultShowPageNumbers`), bevor die dokumentierten festen Standardwerte gelten.
-- Für vorlagenbasierte Word-Erstellung (Platzhalter, Schleifen, Bildeinfügung) verwende den **templates-skill**.
+- Für vorlagenbasierte Word-Erstellung (Platzhalter, Schleifen, Bildeinfügung) verwende den **templates-skill**. Bildplatzhalter sind dort `{IMAGE name}` oder `{%name}` (in einem Zug getippt); `width`/`height` in cm bilden einen Rahmen, in den das Bild unverzerrt eingepasst wird (`fit`: `contain` Standard, `cover` beschneidet, `stretch` nur auf Wunsch).
 - ODT-Dateien lassen sich nativ in LibreOffice und Google Docs öffnen.
 - Die CI der Organisation bzw. des Benutzers wird automatisch angewendet, wenn sie konfiguriert ist: Farben, Schriften und Größen, Seitenformat, Kopf-/Fußzeile, Seitenzahlen und das Logo an der eingestellten Position (Kopf- oder Fußzeile, links/Mitte/rechts). Für ein Dokument, das du selbst per Code-Ausführung baust, liefert `get_corporate_ci` dieselben Werte.

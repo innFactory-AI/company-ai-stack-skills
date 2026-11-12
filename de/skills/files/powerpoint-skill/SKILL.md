@@ -22,6 +22,7 @@ Alles, was du brauchst, um `.pptx`-Foliensätze zu erstellen, zu erweitern und z
 | `read_powerpoint_slides`          | Liest Foliennummern, Titel, Text **sowie Layout/Slots jeder Folie**                  |
 | `list_my_files`                   | Findet einen Foliensatz, den der Nutzer im Chat angehängt hat (`file_id`)            |
 | `list_templates`                  | Findet verfügbare Vorlagen (`type: "potx"`) vor dem Erstellen                        |
+| `list_image_templates`            | Findet Bilder in der Bildbibliothek (`img:<name>`)                                   |
 | `embed_chart_in_document`         | Chart.js-Diagramm als neuer Foliensatz; `title` fügt eine Titelfolie hinzu           |
 
 ---
@@ -208,11 +209,13 @@ genau `???` enthält, beginnt Sprechernotizen, die bis zur nächsten `#`/`##`-Ü
 }
 ```
 
-Inline-Bilder im Markdown von `create_powerpoint` verwenden `doc:<documentId>` oder `lc:<file_id>`:
+Inline-Bilder im Markdown von `create_powerpoint` verwenden `doc:<documentId>`, `lc:<file_id>` oder
+`img:<name>` (Bildbibliothek, siehe §6):
 
 ```markdown
 ![Chart](doc:abc12345-...)
 ![Attachment](lc:xyz-librechat-file-id)
+![Team](img:office-team)
 ```
 
 ### Modus mit typisierten Folien (Layout-Kontrolle)
@@ -257,7 +260,10 @@ gezeichnet – nützlich für Entwürfe.
 
 `bullets` ist hier ein flaches `string[]` – für eingerückte Aufzählungen nutzt du Weg C (`level`)
 oder eine Vorlage. Das Feld `image` nimmt `lc:<file_id>` (Chat-Anhang oder erzeugtes Bild, siehe
-`list_my_files`), `doc:<document_id>`, eine base64-Data-URI oder eine öffentliche http(s)-URL (siehe §6).
+`list_my_files`), `doc:<document_id>`, `img:<name>` (Bildbibliothek), eine base64-Data-URI oder eine
+öffentliche http(s)-URL (siehe §6). `imageFit` legt fest, wie es seinen Bereich füllt: `"contain"`
+(Standard, ganzes Bild, mittig), `"cover"` (füllt den Bereich, beschneidet) oder `"stretch"` (verzerrt –
+nur auf Wunsch). Dasselbe gilt in `append_slides_to_powerpoint` und `update_powerpoint_slide`.
 
 **Natives Diagramm auf einer Folie:** Ergänze `chart` auf einer `default`-Folie (unter dem Text) oder einer
 `text-image`-Folie (ersetzt das Bild – nimm `image` **oder** `chart`, nicht beides). Es ist ein echtes,
@@ -376,7 +382,8 @@ So liest du das:
   „Mastertextformat bearbeiten“ oder Lorem ipsum. Urteile nach Name + Slot-Struktur, nicht nach dem Hinweis.
 - **`isImage`-Slots (`pic:*`) erhalten ein Bild über das separate Argument `images`**, nicht über
   `fields`. `aspectRatio` (Breite ÷ Höhe des Slot-Rahmens) zeigt dir, was sich gut zuschneiden lässt –
-  das Bild wird mittig auf dieses Verhältnis zugeschnitten, nie verzerrt. Ein Slot, für den du kein
+  das Bild wird mittig auf dieses Verhältnis zugeschnitten, nie verzerrt. Aus der Bildbibliothek wählst
+  du ein Bild mit ähnlichem `aspectRatio` (`list_image_templates` mit `aspect_ratio`). Ein Slot, für den du kein
   Bild übergibst, bleibt leer und erscheint in `imageSlotsNotFilled`; versprich dem Nutzer dann kein Bild.
 - **`acceptsChart`-Slots** (Platzhaltertypen `chart`, `obj`, `body`) erhalten ein natives Diagramm über das
   separate Argument `charts` (siehe „Diagramme“ unten). `read_powerpoint_slides` meldet `acceptsChart` ebenfalls.
@@ -431,11 +438,13 @@ bloße Typ `pic` oder die Synonyme `image`/`picture`/`photo`). Als Quellen diene
 }
 ```
 
-`{ "document_id": "..." }` (ein PVC-Upload) und `{ "base64": "..." }` funktionieren genauso. Das Bild
-übernimmt Position und Größe aus dem Layout und wird auf das Seitenverhältnis des Slots zugeschnitten.
-Auch einfache Strings gehen: `"images": { "pic:14": "lc:abc-attachment-id" }` (ebenso `doc:<document_id>`
-oder eine `data:image/…`-URI). Eine nicht auflösbare `lc:`/`doc:`-Referenz bricht den Aufruf ab, der
-Fehler nennt sie.
+`{ "document_id": "..." }` (ein PVC-Upload), `{ "image_template": "..." }` (Bildbibliothek) und
+`{ "base64": "..." }` funktionieren genauso. Das Bild übernimmt Position und Größe aus dem Layout und wird
+auf das Seitenverhältnis des Slots zugeschnitten (`cover`). Soll das ganze Bild zu sehen sein, nutze die
+Objektform mit `"fit": "contain"` (ein Rahmen im Seitenverhältnis des Bildes, mittig im Slot); `"stretch"`
+nur auf Wunsch. Auch einfache Strings gehen: `"images": { "pic:14": "lc:abc-attachment-id" }` (ebenso
+`doc:<document_id>`, `img:<name>` oder eine `data:image/…`-URI). Eine nicht auflösbare
+`lc:`/`doc:`/`img:`-Referenz bricht den Aufruf ab, der Fehler nennt sie.
 
 **Diagramme** gehören in ein `charts`-Objekt pro Folie, mit Keys wie bei `fields` (exakter Slot-Key wie
 `chart:15` oder der bloße Typ; `content`/`chart` nehmen den ersten freien Chart-, Obj- oder Body-Slot).
@@ -813,19 +822,35 @@ Foliensatzes (nur `slideNumber`, `title`, `textLines`).
   gewünscht ist (oder das Deck eine `{{}}`-Vorlage ist, in der `charts` nur Datenreihen umbenennt),
   referenziere ein gespeichertes Diagrammbild als `![chart](doc:<id>)` im Markdown, über einen
   `{%name}`-Bildplatzhalter in einer `{{}}`-Vorlage oder über einen Layout-Bild-Slot (`images`, Weg C).
+- **Bildbibliothek:** Stockfotos, Key Visuals und Icons der Organisation (und eigene des Nutzers).
+  Finde sie mit `list_image_templates` (`search`, `tag`, `orientation`, `aspect_ratio` sortiert nach
+  Nähe, `limit`); jedes Ergebnis hat `ref` (`"img:<name>"`), Beschreibung, Schlagwörter und
+  `aspectRatio`. Übergib das `aspect_ratio` des Zielbereichs (das `aspectRatio` eines Slots aus
+  `describe_pptx_template`, 16:9 = 1.78), damit wenig beschnitten wird; einen Kandidaten siehst du dir
+  mit `view_image { "image_template": "<name>" }` an. Ein unbekannter `img:`-Name bricht den Aufruf mit
+  einem Fehler ab, der ihn nennt.
 - **Bildquellen** unterscheiden sich je nach Tool:
   - Markdown in `create_powerpoint`: `doc:<documentId>` (gespeichertes Bild), `lc:<file_id>`
-    (LibreChat-Anhang – siehe `list_my_files`), eine base64-Data-URI oder eine öffentliche http(s)-URL.
+    (LibreChat-Anhang – siehe `list_my_files`), `img:<name>` (Bildbibliothek), eine base64-Data-URI
+    oder eine öffentliche http(s)-URL.
   - `image`-Felder in `slides[]` sowie Markdown in `append_slides_to_powerpoint` /
-    `update_powerpoint_slide`: `lc:<file_id>`, `doc:<document_id>`, eine base64-Data-URI
-    (`data:image/…`) oder eine öffentliche http(s)-URL. Bevorzuge `lc:`/`doc:` statt base64. Eine nicht
-    auflösbare `lc:`/`doc:`-Referenz in `slides[].image` ist ein Fehler, der sie nennt; im Markdown fällt
-    die Folie auf den Alt-Text zurück.
+    `update_powerpoint_slide`: `lc:<file_id>`, `doc:<document_id>`, `img:<name>`, eine
+    base64-Data-URI (`data:image/…`) oder eine öffentliche http(s)-URL. Bevorzuge `lc:`/`doc:`/`img:`
+    statt base64. Eine nicht auflösbare Referenz in `slides[].image` ist ein Fehler, der sie nennt; im
+    Markdown fällt die Folie auf den Alt-Text zurück.
   - http(s)-Bilder müssen von einem **öffentlich erreichbaren** Host stammen; interne oder private
     Adressen werden abgelehnt.
   - `{%name}`-Vorlagenbilder und Layout-Bild-Slots (`images`) nehmen
-    `{ base64 | document_id | librechat_file_id }`; `images` der Layout-Tools nehmen auch die Strings
-    `lc:…`, `doc:…` oder `data:image/…`.
+    `{ base64 | document_id | librechat_file_id | image_template }`; `images` der Layout-Tools nehmen
+    auch die Strings `lc:…`, `doc:…`, `img:…` oder `data:image/…`.
+- **Bilder werden nie verzerrt**, außer auf Wunsch (`stretch`):
+
+  | Wo                       | Standard                                    | Option                          |
+  | ------------------------ | ------------------------------------------- | ------------------------------- |
+  | `slides[].image`         | `contain`: ganzes Bild, mittig im Bereich   | `imageFit: "cover"` beschneidet |
+  | Layout-Bild-Slots        | `cover`: füllt den Slot, mittiger Beschnitt | `{ …, "fit": "contain" }`       |
+  | `{%name}`-Vorlagenbilder | `cover`; `contain` für Namen mit „logo“     | `fit` je Bild                   |
+
 - Siehe **charts-diagrams-skill** für das Erstellen von Diagrammen, **templates-skill** für
   `{%image}`-Platzhalter, `charts` (benennt nur Datenreihen um – die Diagrammdaten der Vorlage bleiben)
   und `repeat`.

@@ -186,12 +186,12 @@ Gibt dir ein gespeichertes Bild (PNG, JPEG, WebP, GIF) zurück, damit du es besc
 }
 ```
 
-Nimmt `document_id` oder `librechat_file_id` entgegen.
+Nimmt `document_id`, `librechat_file_id` oder `image_template` (ein Bild aus der Bildbibliothek, siehe `list_image_templates` im **templates-skill**) entgegen.
 
 ## Wichtige Hinweise
 
 - `upload_file` prüft Dateigröße (standardmäßig max. 50 MB), Endung und Inhalt (die Bytes müssen zur Endung passen).
-- Eine `document_id` aus einem beliebigen Erstellungs-/Upload-Tool kann wiederverwendet werden: bei der ZIP-Erstellung, beim Einfügen von Bildern in Vorlagen (`document_id` in Bild-Platzhaltern) und in `doc:`-URI-Verweisen im Markdown/HTML der Erstellungs-Tools (`create_word*`, `create_odt*`, `create_pdf*`, `create_powerpoint`; nicht in Append-/Replace-/Update-Tools).
+- Eine `document_id` aus einem beliebigen Erstellungs-/Upload-Tool kann wiederverwendet werden: bei der ZIP-Erstellung, beim Einfügen von Bildern in Vorlagen (`document_id` in Bild-Platzhaltern) und in `doc:`-URI-Verweisen im Markdown/HTML der Erstellungs-Tools (`create_word*`, `create_odt*`, `create_pdf*`, `create_powerpoint`; nicht in Append-/Replace-/Update-Tools). Bilder aus der Bildbibliothek funktionieren genauso als `img:<name>`.
 - Liegt bei LibreChat nur der Textauszug einer Chat-Datei vor (hochgeladen „als Text“), antworten Tools, die die Originaldatei benötigen: „Von dieser Datei liegt bei LibreChat nur ein Textauszug vor – bitte die Originaldatei erneut hochladen.“ Gib das weiter und bitte den Benutzer, die Originaldatei erneut anzuhängen.
 - Dokumente werden nach einer Aufbewahrungsfrist automatisch gelöscht (standardmäßig 365 Tage; kann je Umgebung abweichen).
 - Wo die CAD-Erweiterung verfügbar ist, haben CAD-/BIM-/3D-Dateien (DXF, STEP, IFC, STL, …) eigene Tools (`describe_model`, `query_model`, …; siehe **cad-bim-skill**).

@@ -4,4 +4,4 @@ description: Erstelle Dokumente aus Vorlagen mit companyFILES MCP-Tools — Word
 label: Vorlagen
 ---
 
-Verwende diesen Skill, wenn du eine Vorlage ausfüllen, einen Firmenbriefkopf oder ein Rechnungslayout verwenden, Platzhalter befüllen oder Dokumente aus DOCX-, XLSX-, POTX- oder ODT-Vorlagen erstellen möchtest — inklusive Bildplatzhaltern, Diagrammen und Folienwiederholung sowie nachträglicher Bearbeitung des ausgefüllten Dokuments. Für Änderungen, die die Vorlagen-Tools nicht können, übergibt der Skill die Vorlage an den Code-Interpreter (`attach_template_to_chat`), wo Code-Ausführung verfügbar ist.
+Verwende diesen Skill, wenn du eine Vorlage ausfüllen, einen Firmenbriefkopf oder ein Rechnungslayout verwenden, Platzhalter befüllen oder Dokumente aus DOCX-, XLSX-, POTX- oder ODT-Vorlagen erstellen möchtest — inklusive Bildplatzhaltern, Bildern aus der Bildbibliothek, Diagrammen und Folienwiederholung sowie nachträglicher Bearbeitung des ausgefüllten Dokuments. Für Änderungen, die die Vorlagen-Tools nicht können, übergibt der Skill die Vorlage an den Code-Interpreter (`attach_template_to_chat`), wo Code-Ausführung verfügbar ist.

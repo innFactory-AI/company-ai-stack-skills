@@ -71,7 +71,7 @@ Benutzer will ein PDF-Formular AUSFÜLLEN...
 }
 ```
 
-Unterstützt eingebettete Bilder über die URI `doc:<documentId>` (gespeichertes Dokument) oder `lc:<file_id>` (LibreChat-Anhang): `<img src="doc:abc123..." />`. Dasselbe gilt für Markdown-Bilder in `create_pdf`: `![alt](doc:<uuid>)` oder `![alt](lc:<file_id>)`.
+Unterstützt eingebettete Bilder über die URI `doc:<documentId>` (gespeichertes Dokument), `lc:<file_id>` (LibreChat-Anhang) oder `img:<name>` (Bildbibliothek, siehe `list_image_templates`): `<img src="doc:abc123..." />`. Dasselbe gilt für Markdown-Bilder in `create_pdf`: `![alt](doc:<uuid>)`, `![alt](lc:<file_id>)` oder `![alt](img:<name>)`.
 
 ### read_pdf
 

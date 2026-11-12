@@ -186,12 +186,12 @@ Hands a stored image (PNG, JPEG, WebP, GIF) back to you so you can describe or a
 }
 ```
 
-Takes `document_id` or `librechat_file_id`.
+Takes `document_id`, `librechat_file_id` or `image_template` (an image from the image library, see `list_image_templates` in the **templates-skill**).
 
 ## Key Notes
 
 - `upload_file` validates file size (max 50 MB by default), extension and content (the bytes must match the extension).
-- `document_id` from any create/upload tool can be reused in ZIP creation, template image injection (`document_id` in image placeholders), and `doc:` URI references in the Markdown/HTML of the create tools (`create_word*`, `create_odt*`, `create_pdf*`, `create_powerpoint`; not in append/replace/update tools).
+- `document_id` from any create/upload tool can be reused in ZIP creation, template image injection (`document_id` in image placeholders), and `doc:` URI references in the Markdown/HTML of the create tools (`create_word*`, `create_odt*`, `create_pdf*`, `create_powerpoint`; not in append/replace/update tools). Images from the image library work the same way as `img:<name>`.
 - If LibreChat holds only the text extract of a chat file (uploaded "as text"), tools that need the original file answer: "Von dieser Datei liegt bei LibreChat nur ein Textauszug vor – bitte die Originaldatei erneut hochladen." Pass this on and ask the user to attach the original file again.
 - Documents are auto-deleted after a retention period (default 365 days; can differ per environment).
 - Where the CAD extension is available, CAD/BIM/3D files (DXF, STEP, IFC, STL, …) have their own tools (`describe_model`, `query_model`, …; see the **cad-bim-skill**).

@@ -1,6 +1,6 @@
 ---
 name: templates-skill
-description: 'Create documents from templates using companyFILES MCP tools. Use when asked to fill a template, use a company template, create a document from a predefined layout, fill placeholders, use a letterhead, fill an invoice template, or create from a DOCX/XLSX/POTX/ODT template. Covers Word, Excel, ODT, and PowerPoint template filling, including image placeholders and loop/repeat syntax, and handing a template to the code interpreter for edits the template tools cannot make.'
+description: 'Create documents from templates using companyFILES MCP tools. Use when asked to fill a template, use a company template, create a document from a predefined layout, fill placeholders, use a letterhead, fill an invoice template, or create from a DOCX/XLSX/POTX/ODT template. Covers Word, Excel, ODT, and PowerPoint template filling, including image placeholders, the image library (stock images, key visuals, icons as `img:<name>`) and loop/repeat syntax, and handing a template to the code interpreter for edits the template tools cannot make.'
 ---
 
 # Templates Skill
@@ -19,10 +19,11 @@ Tools for listing and filling document templates (Word, Excel, ODT, PowerPoint).
 | `create_odt_from_template`              | Fill an ODT template with `{{placeholder}}` syntax                                |
 | `create_powerpoint_from_template`       | Fill a POTX/PPTX template with text, images, charts, speaker notes, slide repeat  |
 | `attach_template_to_chat`               | Attach a copy of a template to the chat for the code interpreter                  |
+| `list_image_templates`                  | Search the image library (image templates) for `img:<name>` references            |
 
 ## Workflow
 
-1. **Discover templates:** Call `list_templates` (optionally filter by `type`: `docx`, `xlsx`, `potx`, `odt`, `pdf`)
+1. **Discover templates:** Call `list_templates` (optionally filter by `type`: `docx`, `xlsx`, `potx`, `odt`, `pdf`, `image`)
 2. **Note placeholder names** from the response
 3. **Fill the template** with the matching `create_*_from_template` tool
 4. **Only if the template tools cannot do it** (bulk or free-form changes in the template's layout) and code execution is available: `attach_template_to_chat`, then edit with code (see below)
@@ -48,7 +49,21 @@ For **POTX/PPTX** templates the response includes a per-slide breakdown (`slideI
 - `imagePlaceholders` — `{%name}` placeholders on this slide
 - `chartPlaceholders` — `{{name}}` chart container placeholders on this slide
 
-Use this breakdown to know exactly which placeholder goes on which slide before calling `create_powerpoint_from_template`. Filter by `type` to narrow results: `"docx"`, `"xlsx"`, `"potx"`, `"odt"`, `"pdf"`.
+Use this breakdown to know exactly which placeholder goes on which slide before calling `create_powerpoint_from_template`. Filter by `type` to narrow results: `"docx"`, `"xlsx"`, `"potx"`, `"odt"`, `"pdf"`, `"image"`. Image templates (the image library) only appear with `type: "image"`; to find a fitting image, use `list_image_templates` (see below).
+
+---
+
+### Image library (image templates)
+
+Admins upload organisation images (stock photos, key visuals, icons) in the companyFILES UI under Templates → Upload, users their own (PNG, JPEG, WebP, GIF, TIFF, BMP; no SVG). A personal image hides an organisation image of the same name. Find them with `list_image_templates`:
+
+```json
+{ "search": "team office", "orientation": "landscape", "aspect_ratio": 1.78, "limit": 10 }
+```
+
+All arguments are optional: `search` (all words must appear in name, description or tags), `tag`, `orientation` (`landscape`, `portrait`, `square`), `aspect_ratio` (width/height; sorts the closest first), `limit`. Each result has `ref` (`"img:<name>"`), `description`, `tags`, `width`, `height`, `aspectRatio` and `orientation`. Look at a candidate with `view_image { "image_template": "<name>" }`.
+
+Use the image as `img:<name>` wherever an image is accepted (`slides[].image`, layout `images`, Markdown `![alt](img:<name>)`) or as `image_template` in the `{%name}` image objects of Word and PowerPoint templates. Pick an image whose `aspectRatio` is close to the target slot's, so little is cropped. An unknown name fails the call with an error naming the reference.
 
 ---
 
@@ -85,7 +100,7 @@ Pass `items` as an array in `data`. Missing loop sources are silently skipped wi
 
 ### create_word_from_template_with_images
 
-Supports text placeholders `{name}` and image placeholders `{%logo}`.
+Supports text placeholders `{name}` and image placeholders `{IMAGE logo}` or the short form `{%logo}` (type it in one go, otherwise Word splits it and it stays as text).
 
 ```json
 {
@@ -104,19 +119,18 @@ Supports text placeholders `{name}` and image placeholders `{%logo}`.
 }
 ```
 
-Image via stored document (no re-upload needed):
+Image via stored document or from the image library (no re-upload needed):
 
 ```json
 {
-  "logo": {
-    "document_id": "abc12345-...",
-    "width": 4,
-    "height": 2
-  }
+  "logo": { "document_id": "abc12345-...", "width": 4, "height": 2 },
+  "hero": { "image_template": "office-team", "width": 16, "height": 9, "fit": "cover" }
 }
 ```
 
-The org/user logo is **auto-injected** only into a placeholder named exactly `logo` (i.e. `{%logo}`) — and only when configured in settings and no `logo` value is passed. Differently-named image placeholders (e.g. `{%companyLogo}`) are **not** auto-filled.
+Image values: `{data, extension}` or `{document_id | librechat_file_id | image_template}`. `width`/`height` (cm) are optional and form a box: the image keeps its aspect ratio inside it (`fit: "contain"`, default), `"cover"` crops it to the box, `"stretch"` distorts (only on request). Only one of `width`/`height` scales the other; none = natural size, at most 16 cm wide. `create_word_from_template` takes the same image objects.
+
+The org/user logo is **auto-injected** only into a placeholder named exactly `logo` (i.e. `{%logo}`) — and only when configured in settings and no `logo` value is passed. Differently-named image placeholders (e.g. `{%companyLogo}`) are **not** auto-filled. The logo keeps its aspect ratio (inside 4 × 2 cm).
 
 ---
 
@@ -220,6 +234,8 @@ Always run `list_templates` first — for POTX/PPTX it returns a per-slide break
 `speaker_notes` keys are **1-based** slide numbers.
 
 `charts` only renames the chart's series (`datasets[].label`). `labels` and `values` are **not** applied yet — the server logs them as "not yet implemented" and the chart keeps the template's data. Do not promise the user updated chart numbers.
+
+Image sources per `images` entry: `base64`, `document_id`, `librechat_file_id` or `image_template` (image library, e.g. `{ "image_template": "office-team" }`). The image is fitted into the placeholder picture's frame, never distorted: `fit` per image, default `"cover"` (fills the frame, centre crop), `"contain"` for names containing "logo" (whole image, centred); `"stretch"` only on request.
 
 No logo is placed automatically in PowerPoint templates: only `{{company_name}}` is auto-filled from the settings. To show a logo, pass it explicitly in `images` (e.g. `"logo"` for `{%logo}`).
 
