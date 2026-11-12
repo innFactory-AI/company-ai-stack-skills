@@ -1,6 +1,6 @@
 ---
 name: templates-skill
-description: 'Erstelle Dokumente aus Vorlagen mit companyFILES MCP-Tools. Verwende diesen Skill, wenn eine Vorlage ausgefüllt, eine Firmenvorlage oder ein Briefkopf verwendet, ein Dokument aus einem vordefinierten Layout erstellt, Platzhalter befüllt, eine Rechnungsvorlage ausgefüllt oder aus einer DOCX-/XLSX-/POTX-/ODT-Vorlage erstellt werden soll. Deckt Word-, Excel-, ODT- und PowerPoint-Vorlagen ab, inklusive Bildplatzhaltern und Schleifen-/Wiederholungssyntax, sowie die Übergabe einer Vorlage an den Code-Interpreter für Änderungen, die die Vorlagen-Tools nicht können.'
+description: 'Erstelle Dokumente aus Vorlagen mit companyFILES MCP-Tools. Verwende diesen Skill, wenn eine Vorlage ausgefüllt, eine Firmenvorlage oder ein Briefkopf verwendet, ein Dokument aus einem vordefinierten Layout erstellt, Platzhalter befüllt, eine Rechnungsvorlage ausgefüllt oder aus einer DOCX-/XLSX-/POTX-/ODT-Vorlage erstellt werden soll. Deckt Word-, Excel-, ODT- und PowerPoint-Vorlagen ab, inklusive Bildplatzhaltern, der Bildbibliothek (Stockfotos, Key Visuals, Icons als `img:<name>`) und Schleifen-/Wiederholungssyntax, sowie die Übergabe einer Vorlage an den Code-Interpreter für Änderungen, die die Vorlagen-Tools nicht können.'
 ---
 
 # Vorlagen-Skill
@@ -19,10 +19,11 @@ Tools zum Auflisten und Ausfüllen von Dokumentvorlagen (Word, Excel, ODT, Power
 | `create_odt_from_template`              | ODT-Vorlage mit `{{placeholder}}`-Syntax ausfüllen                                                |
 | `create_powerpoint_from_template`       | POTX/PPTX-Vorlage mit Text, Bildern, Diagrammen, Sprechernotizen und Folienwiederholung ausfüllen |
 | `attach_template_to_chat`               | Kopie einer Vorlage für den Code-Interpreter an den Chat hängen                                   |
+| `list_image_templates`                  | Bildbibliothek (Bildvorlagen) nach `img:<name>`-Verweisen durchsuchen                             |
 
 ## Ablauf
 
-1. **Vorlagen ermitteln:** Rufe `list_templates` auf (optional nach `type` filtern: `docx`, `xlsx`, `potx`, `odt`, `pdf`)
+1. **Vorlagen ermitteln:** Rufe `list_templates` auf (optional nach `type` filtern: `docx`, `xlsx`, `potx`, `odt`, `pdf`, `image`)
 2. **Platzhalternamen** aus der Antwort notieren
 3. **Vorlage ausfüllen** mit dem passenden `create_*_from_template`-Tool
 4. **Nur wenn die Vorlagen-Tools es nicht können** (Massen- oder freie Änderungen im Layout der Vorlage) und Code-Ausführung verfügbar ist: `attach_template_to_chat`, dann per Code bearbeiten (siehe unten)
@@ -48,7 +49,21 @@ Bei **POTX/PPTX**-Vorlagen enthält die Antwort eine Aufschlüsselung pro Folie 
 - `imagePlaceholders` — `{%name}`-Platzhalter auf dieser Folie
 - `chartPlaceholders` — `{{name}}`-Platzhalter für Diagrammcontainer auf dieser Folie
 
-Nutze diese Aufschlüsselung, um vor dem Aufruf von `create_powerpoint_from_template` genau zu wissen, welcher Platzhalter auf welche Folie gehört. Filtere mit `type`, um die Ergebnisse einzugrenzen: `"docx"`, `"xlsx"`, `"potx"`, `"odt"`, `"pdf"`.
+Nutze diese Aufschlüsselung, um vor dem Aufruf von `create_powerpoint_from_template` genau zu wissen, welcher Platzhalter auf welche Folie gehört. Filtere mit `type`, um die Ergebnisse einzugrenzen: `"docx"`, `"xlsx"`, `"potx"`, `"odt"`, `"pdf"`, `"image"`. Bildvorlagen (die Bildbibliothek) erscheinen nur mit `type: "image"`; ein passendes Bild findest du mit `list_image_templates` (siehe unten).
+
+---
+
+### Bildbibliothek (Bildvorlagen)
+
+Admins laden Organisationsbilder (Stockfotos, Key Visuals, Icons) in der companyFILES-Oberfläche unter Vorlagen → Hochladen hoch, Nutzer ihre eigenen (PNG, JPEG, WebP, GIF, TIFF, BMP; kein SVG). Ein persönliches Bild verdeckt ein Organisationsbild mit demselben Namen. Finde sie mit `list_image_templates`:
+
+```json
+{ "search": "team büro", "orientation": "landscape", "aspect_ratio": 1.78, "limit": 10 }
+```
+
+Alle Argumente sind optional: `search` (alle Wörter müssen in Name, Beschreibung oder Schlagwörtern vorkommen), `tag`, `orientation` (`landscape`, `portrait`, `square`), `aspect_ratio` (Breite/Höhe; sortiert die nächsten zuerst), `limit`. Jedes Ergebnis hat `ref` (`"img:<name>"`), `description`, `tags`, `width`, `height`, `aspectRatio` und `orientation`. Einen Kandidaten siehst du dir mit `view_image { "image_template": "<name>" }` an.
+
+Verwende das Bild als `img:<name>` überall, wo ein Bild angenommen wird (`slides[].image`, Layout-`images`, Markdown `![alt](img:<name>)`), oder als `image_template` in den `{%name}`-Bildobjekten von Word- und PowerPoint-Vorlagen. Wähle ein Bild, dessen `aspectRatio` nah am Seitenverhältnis des Zielbereichs liegt, damit wenig beschnitten wird. Ein unbekannter Name bricht den Aufruf mit einem Fehler ab, der den Verweis nennt.
 
 ---
 
@@ -85,7 +100,7 @@ Platzhaltersyntax: `{placeholder}` (einfache geschweifte Klammern). Punktpfade: 
 
 ### create_word_from_template_with_images
 
-Unterstützt Textplatzhalter `{name}` und Bildplatzhalter `{%logo}`.
+Unterstützt Textplatzhalter `{name}` und Bildplatzhalter `{IMAGE logo}` oder die Kurzform `{%logo}` (in einem Zug tippen, sonst teilt Word ihn auf und er bleibt als Text stehen).
 
 ```json
 {
@@ -104,19 +119,18 @@ Unterstützt Textplatzhalter `{name}` und Bildplatzhalter `{%logo}`.
 }
 ```
 
-Bild aus einem gespeicherten Dokument (kein erneuter Upload nötig):
+Bild aus einem gespeicherten Dokument oder aus der Bildbibliothek (kein erneuter Upload nötig):
 
 ```json
 {
-  "logo": {
-    "document_id": "abc12345-...",
-    "width": 4,
-    "height": 2
-  }
+  "logo": { "document_id": "abc12345-...", "width": 4, "height": 2 },
+  "hero": { "image_template": "office-team", "width": 16, "height": 9, "fit": "cover" }
 }
 ```
 
-Das Organisations-/Benutzerlogo wird **automatisch eingefügt**, aber nur in einen Platzhalter, der exakt `logo` heißt (also `{%logo}`) — und nur, wenn es in den Einstellungen konfiguriert ist und kein `logo`-Wert übergeben wird. Anders benannte Bildplatzhalter (z. B. `{%companyLogo}`) werden **nicht** automatisch befüllt.
+Bildwerte: `{data, extension}` oder `{document_id | librechat_file_id | image_template}`. `width`/`height` (cm) sind optional und bilden einen Rahmen: Das Bild behält darin sein Seitenverhältnis (`fit: "contain"`, Standard), `"cover"` schneidet es auf den Rahmen zu, `"stretch"` verzerrt (nur auf Wunsch). Nur eine der beiden Angaben skaliert die andere mit; keine Angabe = natürliche Größe, höchstens 16 cm breit. `create_word_from_template` nimmt dieselben Bildobjekte.
+
+Das Organisations-/Benutzerlogo wird **automatisch eingefügt**, aber nur in einen Platzhalter, der exakt `logo` heißt (also `{%logo}`) — und nur, wenn es in den Einstellungen konfiguriert ist und kein `logo`-Wert übergeben wird. Anders benannte Bildplatzhalter (z. B. `{%companyLogo}`) werden **nicht** automatisch befüllt. Das Logo behält sein Seitenverhältnis (im Rahmen 4 × 2 cm).
 
 ---
 
@@ -220,6 +234,8 @@ Führe immer zuerst `list_templates` aus — bei POTX/PPTX liefert es eine Aufsc
 Die Schlüssel von `speaker_notes` sind Foliennummern, **beginnend bei 1**.
 
 `charts` benennt nur die Datenreihen des Diagramms um (`datasets[].label`). `labels` und `values` werden **noch nicht** übernommen — der Server protokolliert sie als "not yet implemented", und das Diagramm behält die Daten der Vorlage. Versprich dem Nutzer keine aktualisierten Diagrammwerte.
+
+Bildquellen je `images`-Eintrag: `base64`, `document_id`, `librechat_file_id` oder `image_template` (Bildbibliothek, z. B. `{ "image_template": "office-team" }`). Das Bild wird in den Rahmen des Platzhalterbildes eingepasst, nie verzerrt: `fit` je Bild, Standard `"cover"` (füllt den Rahmen, mittiger Beschnitt), `"contain"` für Namen mit „logo“ (ganzes Bild, mittig); `"stretch"` nur auf Wunsch.
 
 In PowerPoint-Vorlagen wird kein Logo automatisch platziert: Nur `{{company_name}}` wird automatisch aus den Einstellungen befüllt. Um ein Logo anzuzeigen, übergib es explizit in `images` (z. B. `"logo"` für `{%logo}`).
 

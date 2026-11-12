@@ -84,7 +84,7 @@ User wants to FILL a corporate document / form in its own layout...
 }
 ```
 
-Supports inline images via `doc:<documentId>` (stored companyFILES doc) or `lc:<file_id>` (LibreChat attachment) URI: `<img src="doc:abc123..." />`. The same syntax works in Markdown for `create_word`: `![alt](doc:<uuid>)` or `![alt](lc:<file_id>)`.
+Supports inline images via `doc:<documentId>` (stored companyFILES doc), `lc:<file_id>` (LibreChat attachment) or `img:<name>` (image library, see `list_image_templates` in **templates-skill**) URI: `<img src="doc:abc123..." />`. The same syntax works in Markdown for `create_word`: `![alt](doc:<uuid>)`, `![alt](lc:<file_id>)` or `![alt](img:<name>)`. An unknown `img:` name fails the call with an error naming it.
 
 ### create_word_from_json
 
@@ -287,8 +287,8 @@ No tool fills such a document in its own layout. Tell the user plainly, and offe
 
 - All create tools return `{id, filename, downloadUrl, markdownLink}` (plus `librechat_file_id` when the document is also stored as a chat file) — always render `markdownLink` in the reply.
 - In-place edit tools (`append_to_word`, `replace_word_content`) on a companyFILES document return the same `id` and an updated `markdownLink`. On a chat attachment (`librechat_file_id`) that was updated in place, they return only `{librechat_file_id, filename, message}` — there is no download link; tell the user the attached file was updated. If the attachment cannot be updated in place, the modified copy is saved as a **new** document and its new `id`/`markdownLink` is returned — use that id from then on.
-- Inline images can be referenced via `doc:<documentId>` or `lc:<file_id>` in the Markdown or HTML of the create tools (`create_word`, `create_word_from_html`, `create_odt`, `create_odt_from_html`) — SVG is auto-converted to PNG for Word. `append_to_word` and `replace_word_content` do not resolve these references.
+- Inline images can be referenced via `doc:<documentId>`, `lc:<file_id>` or `img:<name>` (image library) in the Markdown or HTML of the create tools (`create_word`, `create_word_from_html`, `create_odt`, `create_odt_from_html`) — SVG is auto-converted to PNG for Word. `append_to_word` and `replace_word_content` do not resolve these references.
 - Unset page/header/footer options fall back to the org/user theme defaults (e.g. `defaultPageSize`, `defaultHeaderText`, `defaultShowPageNumbers`) before the documented hard defaults apply.
-- For template-based Word creation (placeholders, loops, image injection), use the **templates-skill**.
+- For template-based Word creation (placeholders, loops, image injection), use the **templates-skill**. Image placeholders there are `{IMAGE name}` or `{%name}` (typed in one go); `width`/`height` in cm form a box the image is fitted into without distortion (`fit`: `contain` default, `cover` crops, `stretch` only on request).
 - ODT files open natively in LibreOffice and Google Docs.
 - The org/user CI is applied automatically when configured: colours, fonts and sizes, page format, header/footer, page numbers and the logo at the configured position (header or footer, left/center/right). For a document you build yourself with code execution, `get_corporate_ci` returns the same values.

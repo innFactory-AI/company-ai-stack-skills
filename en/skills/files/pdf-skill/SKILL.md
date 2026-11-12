@@ -71,7 +71,7 @@ User wants to FILL a PDF form...
 }
 ```
 
-Supports inline images via `doc:<documentId>` (stored doc) or `lc:<file_id>` (LibreChat attachment) URI: `<img src="doc:abc123..." />`. The same applies to Markdown images in `create_pdf`: `![alt](doc:<uuid>)` or `![alt](lc:<file_id>)`.
+Supports inline images via `doc:<documentId>` (stored doc), `lc:<file_id>` (LibreChat attachment) or `img:<name>` (image library, see `list_image_templates`) URI: `<img src="doc:abc123..." />`. The same applies to Markdown images in `create_pdf`: `![alt](doc:<uuid>)`, `![alt](lc:<file_id>)` or `![alt](img:<name>)`.
 
 ### read_pdf
 

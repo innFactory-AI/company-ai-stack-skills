@@ -22,6 +22,7 @@ Everything needed to build, extend and repair `.pptx` decks.
 | `read_powerpoint_slides`          | Read slide numbers, titles, text **and each slide's layout/slots**  |
 | `list_my_files`                   | Find a deck the user attached in the chat (`file_id`)               |
 | `list_templates`                  | Find available templates (`type: "potx"`) before building           |
+| `list_image_templates`            | Find images in the image library (`img:<name>`)                     |
 | `embed_chart_in_document`         | Chart.js chart as a new deck; `title` adds a title slide            |
 
 ---
@@ -201,11 +202,13 @@ starts speaker notes, which run until the next `#`/`##` heading.
 }
 ```
 
-Inline images in `create_powerpoint` Markdown use `doc:<documentId>` or `lc:<file_id>`:
+Inline images in `create_powerpoint` Markdown use `doc:<documentId>`, `lc:<file_id>` or `img:<name>`
+(image library, see §6):
 
 ```markdown
 ![Chart](doc:abc12345-...)
 ![Attachment](lc:xyz-librechat-file-id)
+![Team](img:office-team)
 ```
 
 ### Typed slides mode (layout control)
@@ -249,7 +252,10 @@ over about 60 characters is cut with "…". Keep slide titles short and put deta
 
 `bullets` is a flat `string[]` here — for nested bullets use path C (`level`) or a template.
 The `image` field takes `lc:<file_id>` (chat attachment or generated image, see `list_my_files`),
-`doc:<document_id>`, a base64 data URI or a public http(s) URL (see §6).
+`doc:<document_id>`, `img:<name>` (image library), a base64 data URI or a public http(s) URL (see §6).
+`imageFit` sets how it fills its area: `"contain"` (default, whole image, centred), `"cover"` (fills the
+area, crops) or `"stretch"` (distorts — only on request). The same holds in `append_slides_to_powerpoint`
+and `update_powerpoint_slide`.
 
 **Native chart on a slide:** add `chart` to a `default` slide (below the text) or a `text-image` slide
 (replaces the image — use `image` **or** `chart`, not both). It is a real, editable PowerPoint chart
@@ -367,7 +373,8 @@ Reading it:
   "Mastertextformat bearbeiten" or lorem ipsum. Judge by name + slot shape, not by hint.
 - **`isImage` slots (`pic:*`) take an image through the separate `images` argument**, not through
   `fields`. `aspectRatio` (width ÷ height of the slot frame) tells you what will crop well — the
-  image is centre-cropped to that ratio, never stretched. A slot you pass no image for stays empty
+  image is centre-cropped to that ratio, never stretched. From the image library pick an image with a
+  close `aspectRatio` (`list_image_templates` with `aspect_ratio`). A slot you pass no image for stays empty
   and comes back in `imageSlotsNotFilled`; don't promise the user a picture then.
 - **`acceptsChart` slots** (placeholder types `chart`, `obj`, `body`) take a native chart through the
   separate `charts` argument (see "Charts" below). `read_powerpoint_slides` reports `acceptsChart` too.
@@ -422,10 +429,13 @@ Each slide picks its layout by `layoutId`, layout name, or role — mix freely.
 }
 ```
 
-`{ "document_id": "..." }` (a PVC upload) and `{ "base64": "..." }` work the same way, and so do plain
-strings: `"images": { "pic:14": "lc:abc-attachment-id" }` (also `doc:<document_id>` or a `data:image/…`
-URI). The picture inherits its position and size from the layout and is cropped to the slot's aspect
-ratio. An unresolvable `lc:`/`doc:` reference aborts the call and the error names it.
+`{ "document_id": "..." }` (a PVC upload), `{ "image_template": "..." }` (image library) and
+`{ "base64": "..." }` work the same way, and so do plain strings: `"images": { "pic:14": "lc:abc-attachment-id" }`
+(also `doc:<document_id>`, `img:<name>` or a `data:image/…` URI). The picture inherits its position and
+size from the layout and is cropped to the slot's aspect ratio (`cover`). To show the whole image
+instead, use the object form with `"fit": "contain"` (a frame in the image's ratio, centred in the
+slot); `"stretch"` only on request. An unresolvable `lc:`/`doc:`/`img:` reference aborts the call and
+the error names it.
 
 **Charts** go in a per-slide `charts` object, keyed like `fields` (exact slot key such as `chart:15`, or
 the bare type; `content`/`chart` take the first free chart, obj or body slot). The chart fills the slot's
@@ -789,19 +799,34 @@ the keys still free. Pass `include_layouts: false` for a text-only read of a ver
   wanted (or the deck is a `{{}}` template, where `charts` just renames series), reference a stored
   chart image as `![chart](doc:<id>)` in Markdown, through a `{%name}` image placeholder in a `{{}}`
   template, or through a layout picture slot (`images`, path C).
+- **Image library:** the organisation's (and the user's own) stock photos, key visuals and icons.
+  Find them with `list_image_templates` (`search`, `tag`, `orientation`, `aspect_ratio` sorts by
+  closeness, `limit`); each result has `ref` (`"img:<name>"`), description, tags and `aspectRatio`.
+  Pass `aspect_ratio` of the target area (a slot's `aspectRatio` from `describe_pptx_template`, 16:9 =
+  1.78) so little is cropped; look at a candidate with `view_image { "image_template": "<name>" }`.
+  An unknown `img:` name fails the call with an error that names it.
 - **Image sources** differ by tool:
   - `create_powerpoint` Markdown: `doc:<documentId>` (stored image), `lc:<file_id>` (LibreChat
-    attachment — see `list_my_files`), a base64 data URI or a public http(s) URL.
+    attachment — see `list_my_files`), `img:<name>` (image library), a base64 data URI or a public
+    http(s) URL.
   - `image` fields in `slides[]`, and Markdown in `append_slides_to_powerpoint` /
-    `update_powerpoint_slide`: `lc:<file_id>`, `doc:<document_id>`, a base64 data URI
-    (`data:image/…`) or a public http(s) URL. Prefer `lc:`/`doc:` over base64. In `slides[].image` an
-    unresolvable `lc:`/`doc:` reference is an error that names it; in Markdown the slide falls back
-    to the alt text.
+    `update_powerpoint_slide`: `lc:<file_id>`, `doc:<document_id>`, `img:<name>`, a base64 data URI
+    (`data:image/…`) or a public http(s) URL. Prefer `lc:`/`doc:`/`img:` over base64. In
+    `slides[].image` an unresolvable reference is an error that names it; in Markdown the slide falls
+    back to the alt text.
   - http(s) images must come from a **publicly reachable** host; internal or private addresses
     are refused.
   - `{%name}` template images and layout picture slots (`images`) take
-    `{ base64 | document_id | librechat_file_id }`; layout `images` also take the strings `lc:…`,
-    `doc:…` or `data:image/…`.
+    `{ base64 | document_id | librechat_file_id | image_template }`; layout `images` also take the
+    strings `lc:…`, `doc:…`, `img:…` or `data:image/…`.
+- **Images are never distorted** unless asked for (`stretch`):
+
+  | Where                         | Default                                         | Option                        |
+  | ----------------------------- | ----------------------------------------------- | ----------------------------- |
+  | `slides[].image`              | `contain`: whole image, centred in its area     | `imageFit: "cover"` crops     |
+  | Layout picture slots          | `cover`: fills the slot, centre crop            | `{ …, "fit": "contain" }`     |
+  | `{%name}` template pictures   | `cover`; `contain` for names containing "logo"  | `fit` per image               |
+
 - See **charts-diagrams-skill** for chart/diagram creation, **templates-skill** for `{%image}`
   placeholders, `charts` (renames series only — the template's chart data stays) and `repeat`.
 
