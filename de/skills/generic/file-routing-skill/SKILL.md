@@ -32,7 +32,7 @@ Prüfe deine Tool-Liste, bevor du einen Weg wählst. Apps (companyFILES, company
 | Natives Word-, Excel-, PowerPoint- oder PDF-Dokument erstellen | companyFILES-`create_*`-Tools (siehe Word-, Excel-, PowerPoint-, PDF-Skill) | Ohne companyFILES: Inhalt als Markdown im Chat liefern |
 | Angehängte DOCX, XLSX, PDF oder PPTX lesen | companyFILES `read_word`, `read_excel`, `read_pdf`, `read_powerpoint_slides` mit `librechat_file_id` | Kurze Textdateien sind oft schon in deinem Kontext |
 | Berechnungen, Filter, Pivots oder Statistik auf einer angehängten CSV/XLSX | Code-Ausführung (pandas auf `/mnt/data/<dateiname>`), siehe unten | Ohne Code-Ausführung: companyFILES `read_excel` (CSV: `read_file`, falls verfügbar) und über die Werte schlussfolgern; bei großen Dateien sagen, dass das Ergebnis auf dem gelesenen Ausschnitt beruht |
-| Diagramm aus angehängten Daten | Code-Ausführung (matplotlib/plotly) **oder** companyFILES `show_interactive_chart` (im Chat) / `create_chart_document` (im Dokument) | Ohne Code-Ausführung: Werte mit `read_excel` lesen, dann die companyFILES-Diagramm-Tools |
+| Diagramm aus angehängten Daten | **Im Chat:** companyFILES `show_interactive_chart`. **In einer PowerPoint:** natives, bearbeitbares Diagramm über companyFILES `slides[].chart` (`create_powerpoint`, `append_slides_to_powerpoint`, `update_powerpoint_slide`) oder `charts` (Layout-Tools), siehe PowerPoint-Skill. **In Word/PDF:** Bild über `create_chart_document` / `embed_chart_in_document` (nicht ODT: Diagramm zuerst als Bild rendern und einbetten, siehe word-odt-skill). Alternativ Code-Ausführung (matplotlib/plotly) für ein Bild | Ohne Code-Ausführung: Werte mit `read_excel` lesen, dann die companyFILES-Diagramm-Tools |
 | Firmenvorlage ausfüllen | companyFILES `list_templates` + `create_*_from_template` (Vorlagen-Skill) | — |
 | Massen- oder freie Änderungen im Layout einer Vorlage | companyFILES `attach_template_to_chat`, dann Code-Ausführung ab der **nächsten** Nachricht des Nutzers (Vorlagen-Skill) | Braucht Code-Ausführung und LibreChat-Dateispeicher für companyFILES; sonst `create_*_from_template` plus die iterativen Bearbeitungstools |
 | Ein angehängtes Firmen-Deck oder Word-Dokument mit Blindtext („Text“, „XXX“, „[Kunde]“), aber ohne `{{Platzhalter}}` befüllen | Code-Ausführung mit den Skripten aus dem PowerPoint-Skill (Weg D) oder dem Word-Skill | Ohne Code-Ausführung gibt es kein Tool dafür: sag das und biete die Optionen aus diesen Skills an; liefere nie leere Folien oder Folien mit Blindtext als fertig aus |
@@ -61,7 +61,7 @@ Nutze sie für Berechnungen auf angehängten Daten, Diagramme als Bild und Masse
 
 ## Regeln
 
-1. **Erfinde nie eine `file_id`.** Nur aus dem Block der angehängten Dateien oder aus `list_my_files`.
+1. **Erfinde nie eine `file_id`.** Nur aus dem Block der angehängten Dateien oder aus `list_my_files`. Dieselbe `file_id` taugt als Bild im Deck: `lc:<file_id>` in `slides[].image` oder in `images` eines Layouts.
 2. **Sag, was fehlt.** Hängt ein Weg an einer App oder an Code-Ausführung, die nicht in deiner Tool-Liste ist, nimm die Alternative oder sag es dem Nutzer klar.
 3. **Ein Weg pro Aufgabe.** Lies dieselbe Datei nicht „sicherheitshalber“ mit mehreren Tools.
 4. **Nur Textauszug?** Antwortet ein Tool, dass LibreChat nur einen Textauszug der Datei hat, bitte den Nutzer, die Originaldatei erneut anzuhängen.

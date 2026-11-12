@@ -32,7 +32,7 @@ Check your tool list before you choose a route. Apps (companyFILES, companyRAG, 
 | Create a native Word, Excel, PowerPoint or PDF document | companyFILES `create_*` tools (see the Word, Excel, PowerPoint, PDF skills) | Without companyFILES: deliver the content as Markdown in the chat |
 | Read an attached DOCX, XLSX, PDF or PPTX | companyFILES `read_word`, `read_excel`, `read_pdf`, `read_powerpoint_slides` with `librechat_file_id` | Short text files are often already in your context |
 | Calculations, filters, pivots or statistics on an attached CSV/XLSX | Code execution (pandas on `/mnt/data/<filename>`), see below | Without code execution: companyFILES `read_excel` (CSV: `read_file` if available) and reason over the values; for large files say that the result is based on what you could read |
-| Chart from attached data | Code execution (matplotlib/plotly) **or** companyFILES `show_interactive_chart` (in the chat) / `create_chart_document` (in a document) | Without code execution: read the values with `read_excel`, then the companyFILES chart tools |
+| Chart from attached data | **In the chat:** companyFILES `show_interactive_chart`. **In a PowerPoint deck:** a native, editable chart via companyFILES `slides[].chart` (`create_powerpoint`, `append_slides_to_powerpoint`, `update_powerpoint_slide`) or `charts` (layout tools), see the PowerPoint skill. **In Word/PDF:** a picture via `create_chart_document` / `embed_chart_in_document` (not ODT: render the chart as an image first and embed it, see word-odt-skill). Alternatively code execution (matplotlib/plotly) for an image | Without code execution: read the values with `read_excel`, then the companyFILES chart tools |
 | Fill a company template | companyFILES `list_templates` + `create_*_from_template` (templates skill) | — |
 | Bulk or free-form edits in a template's layout | companyFILES `attach_template_to_chat`, then code execution from the user's **next** message (templates skill) | Needs code execution and LibreChat file storage for companyFILES; otherwise `create_*_from_template` plus the iterative edit tools |
 | Fill an attached corporate deck or Word document that has sample text ("Text", "XXX", "[Kunde]") but no `{{placeholders}}` | Code execution with the scripts of the PowerPoint skill (path D) or the Word skill | Without code execution there is no tool for it: say so and offer the options from those skills; never deliver empty or sample-text slides as done |
@@ -61,7 +61,7 @@ Use it for calculations on attached data, charts as images, and bulk edits. With
 
 ## Rules
 
-1. **Never invent a `file_id`.** Only from the attached-files block or `list_my_files`.
+1. **Never invent a `file_id`.** Only from the attached-files block or `list_my_files`. The same `file_id` can be used as an image in a deck: `lc:<file_id>` in `slides[].image` or in a layout's `images`.
 2. **Say what is missing.** If a route depends on an app or on code execution that is not in your tool list, use the fallback or tell the user plainly.
 3. **One route per task.** Do not read the same file with several tools "to be safe".
 4. **Text extract only?** If a tool answers that LibreChat only holds a text extract of the file, ask the user to attach the original file again.

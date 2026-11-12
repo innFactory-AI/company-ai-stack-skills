@@ -248,7 +248,33 @@ over about 60 characters is cut with "…". Keep slide titles short and put deta
 ```
 
 `bullets` is a flat `string[]` here — for nested bullets use path C (`level`) or a template.
-The `image` field takes a base64 data URI or a public http(s) URL — not `doc:`/`lc:` (see §6).
+The `image` field takes `lc:<file_id>` (chat attachment or generated image, see `list_my_files`),
+`doc:<document_id>`, a base64 data URI or a public http(s) URL (see §6).
+
+**Native chart on a slide:** add `chart` to a `default` slide (below the text) or a `text-image` slide
+(replaces the image — use `image` **or** `chart`, not both). It is a real, editable PowerPoint chart
+("Edit Data" opens the numbers in Excel), in the corporate identity's colours and font. `section`
+slides show none. Same data shape as `show_interactive_chart`:
+
+```json
+{
+  "type": "default",
+  "title": "Revenue per quarter",
+  "bullets": ["Q3 is the strongest quarter"],
+  "chart": {
+    "type": "bar",
+    "labels": ["Q1", "Q2", "Q3"],
+    "datasets": [{ "label": "2026", "data": [12, 15, 19] }],
+    "showValues": true
+  }
+}
+```
+
+`chart.type`: `bar`, `horizontalBar`, `stackedBar`, `line`, `area`, `pie`, `doughnut`, `scatter`, `radar`
+(`pie`/`doughnut` show only the first dataset). Optional: `title`, `showLegend`, `showValues`,
+`numberFormat` (Excel format, e.g. `"#,##0"`), `xAxisTitle`, `yAxisTitle`. Limits: at most 20 datasets with
+1000 points each; every dataset needs exactly one number per label, otherwise the tool fails and names the
+series. Also works in `append_slides_to_powerpoint` and `update_powerpoint_slide`.
 
 ### Styled tables — `htmlTable`
 
@@ -343,6 +369,8 @@ Reading it:
   `fields`. `aspectRatio` (width ÷ height of the slot frame) tells you what will crop well — the
   image is centre-cropped to that ratio, never stretched. A slot you pass no image for stays empty
   and comes back in `imageSlotsNotFilled`; don't promise the user a picture then.
+- **`acceptsChart` slots** (placeholder types `chart`, `obj`, `body`) take a native chart through the
+  separate `charts` argument (see "Charts" below). `read_powerpoint_slides` reports `acceptsChart` too.
 
 ### Step 2 — `create_powerpoint_from_layouts`
 
@@ -394,8 +422,32 @@ Each slide picks its layout by `layoutId`, layout name, or role — mix freely.
 }
 ```
 
-`{ "document_id": "..." }` (a PVC upload) and `{ "base64": "..." }` work the same way. The
-picture inherits its position and size from the layout and is cropped to the slot's aspect ratio.
+`{ "document_id": "..." }` (a PVC upload) and `{ "base64": "..." }` work the same way, and so do plain
+strings: `"images": { "pic:14": "lc:abc-attachment-id" }` (also `doc:<document_id>` or a `data:image/…`
+URI). The picture inherits its position and size from the layout and is cropped to the slot's aspect
+ratio. An unresolvable `lc:`/`doc:` reference aborts the call and the error names it.
+
+**Charts** go in a per-slide `charts` object, keyed like `fields` (exact slot key such as `chart:15`, or
+the bare type; `content`/`chart` take the first free chart, obj or body slot). The chart fills the slot's
+frame (from the layout, else the slide master; no frame is an error naming the slot) in the deck's theme
+colours (Design → Colors) and fonts. A slot takes a field **or** a chart, not both. Same chart object as
+`slides[].chart` above:
+
+```json
+{
+  "layout": "Diagramm",
+  "fields": { "title": "Revenue per quarter" },
+  "charts": {
+    "chart:15": {
+      "type": "bar",
+      "labels": ["Q1", "Q2", "Q3"],
+      "datasets": [{ "label": "2026", "data": [12, 15, 19] }]
+    }
+  }
+}
+```
+
+`charts` works the same in `add_slides_from_layouts` and `set_powerpoint_slide_fields`.
 
 **Slot values** accept three shapes:
 
@@ -732,19 +784,24 @@ the keys still free. Pass `include_layouts: false` for a text-only read of a ver
   has **two** slides. The result is a deck — keep appending to it with
   `append_slides_to_powerpoint`. Its `id` is a `.pptx`, **not an image**: passed as `doc:<id>` or
   as an image `document_id` it is rejected as "not an image".
-- **Chart on a content slide:** take a stored chart image (e.g. an uploaded PNG — its document id)
-  and reference it as `![chart](doc:<id>)` in `create_powerpoint` Markdown, through a `{%name}`
-  image placeholder in a `{{}}` template, or through a layout picture slot (`images`, path C).
+- **Chart on a content slide:** use the native chart — `slides[].chart` (generated decks, §3) or
+  `charts` per slot (corporate decks, path C). It stays editable in PowerPoint. Only if a picture is
+  wanted (or the deck is a `{{}}` template, where `charts` just renames series), reference a stored
+  chart image as `![chart](doc:<id>)` in Markdown, through a `{%name}` image placeholder in a `{{}}`
+  template, or through a layout picture slot (`images`, path C).
 - **Image sources** differ by tool:
   - `create_powerpoint` Markdown: `doc:<documentId>` (stored image), `lc:<file_id>` (LibreChat
     attachment — see `list_my_files`), a base64 data URI or a public http(s) URL.
   - `image` fields in `slides[]`, and Markdown in `append_slides_to_powerpoint` /
-    `update_powerpoint_slide`: only a base64 data URI (`data:image/…`) or a public http(s) URL. A
-    `doc:`/`lc:` reference is not resolved there — the slide shows an `[Image: …]` text instead.
+    `update_powerpoint_slide`: `lc:<file_id>`, `doc:<document_id>`, a base64 data URI
+    (`data:image/…`) or a public http(s) URL. Prefer `lc:`/`doc:` over base64. In `slides[].image` an
+    unresolvable `lc:`/`doc:` reference is an error that names it; in Markdown the slide falls back
+    to the alt text.
   - http(s) images must come from a **publicly reachable** host; internal or private addresses
     are refused.
   - `{%name}` template images and layout picture slots (`images`) take
-    `{ base64 | document_id | librechat_file_id }`.
+    `{ base64 | document_id | librechat_file_id }`; layout `images` also take the strings `lc:…`,
+    `doc:…` or `data:image/…`.
 - See **charts-diagrams-skill** for chart/diagram creation, **templates-skill** for `{%image}`
   placeholders, `charts` (renames series only — the template's chart data stays) and `repeat`.
 

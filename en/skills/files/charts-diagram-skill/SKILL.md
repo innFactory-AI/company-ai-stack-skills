@@ -24,7 +24,9 @@ User wants to SEE a chart in chat            → show_interactive_chart   (ALWAY
 User wants to SEE a diagram in chat          → show_interactive_diagram  (ALWAYS preferred)
 User wants to SEE locations on a map         → show_interactive_map
 
-User wants to SAVE a chart as a document...
+User wants a chart in a PowerPoint deck      → native chart: slides[].chart / charts (powerpoint-skill)
+                                               editable in PowerPoint, not a picture
+User wants to SAVE a chart as Word/PDF...
   Chart + optional description text          → create_chart_document
   Chart embedded in a doc (more control)     → embed_chart_in_document
 
@@ -184,10 +186,36 @@ Supported types: `bar`, `line`, `pie`, `doughnut`, `radar`, `scatter`, `bubble`,
 
 `document_type` options: `word`, `powerpoint`, `pdf`
 
+### Chart in a PowerPoint deck: native, not a picture
+
+For `.pptx` use the native, editable chart of the PowerPoint tools instead of `create_chart_document` /
+`embed_chart_in_document` (those render a picture). The data is the same as in `show_interactive_chart`
+(`labels` + `datasets`), but the key is `type` (not `chart_type`) and the types are `bar`, `horizontalBar`,
+`stackedBar`, `line`, `area`, `pie`, `doughnut`, `scatter`, `radar` (no `bubble`/`polarArea`/`waterfall`/`funnel`;
+use `create_chart_document` for those). `scatter` takes numeric labels as x values. Generated deck
+(`create_powerpoint`, `append_slides_to_powerpoint`, `update_powerpoint_slide`):
+
+```json
+{
+  "slides": [
+    {
+      "type": "default",
+      "title": "Revenue per quarter",
+      "chart": { "type": "bar", "labels": ["Q1", "Q2", "Q3"], "datasets": [{ "label": "2026", "data": [12, 15, 19] }] }
+    }
+  ]
+}
+```
+
+Corporate deck (`create_powerpoint_from_layouts`, `add_slides_from_layouts`, `set_powerpoint_slide_fields`): the
+same object per slot in `charts`, e.g. `"charts": { "chart:15": { "type": "bar", … } }`; the slot must report
+`acceptsChart` in `describe_pptx_template`. Details: powerpoint-skill.
+
 ## Key Notes
 
 - `show_interactive_chart` and `show_interactive_diagram` return a **widget** (rendered in LibreChat) plus a text line such as `Interactive chart: [Title](viewer-url) · [Download PNG](url)` (`Interactive diagram: …` for diagrams). Pass these on as plain Markdown links — **never** embed the download URL as an image (`![](…)`): it is an authenticated download endpoint, not an image the browser can load. If the PNG fallback could not be rendered, the line only contains the viewer link.
 - Document-embedding tools return `{id, filename, downloadUrl, markdownLink}` (plus `librechat_file_id` when the document is also stored as a chat file) — always render `markdownLink`.
 - The org/user color palette is automatically applied to chart colors when configured in settings.
 - Google Gemini models cannot render interactive widgets — responses fall back to text/JSON data.
+- `create_chart_document` and `embed_chart_in_document` with `powerpoint` produce a picture, not an editable chart. Prefer the native chart for decks.
 - `show_interactive_chart` and `create_chart_document` accept all 13 chart types; `area`, `stackedBar`, `horizontalBar` are mapped to their static equivalents when rendering as images. `embed_chart_in_document` only accepts the 8 base types and rejects the extended ones — use `create_chart_document` for those.
