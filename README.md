@@ -1,5 +1,12 @@
 # CompanyGPT Agent Skills
 
+> [!IMPORTANT]
+> **This repository is archived. The skills moved to [innFactory-AI/companygpt-library](https://github.com/innFactory-AI/companygpt-library).**
+> There, German and English skills have their own names (`de-excel`, `en-excel`), so both languages fit into one
+> companyGPT, and the repo also has ready-made agents and admin defaults (model labels). If you connected this repo
+> in companyADMIN Library Sync, remove it and connect `innFactory-AI/companygpt-library` (sources `skills`, optionally
+> `agents`); your own agents need the new skill names.
+
 Ready-made agent skills for CompanyGPT, available in German and English — 75 skills across 12 categories.
 
 Each skill is a self-contained prompt that teaches an agent one job: how to run a QBR, prep a

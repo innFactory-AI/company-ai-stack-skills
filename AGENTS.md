@@ -1,5 +1,12 @@
 # company-ai-stack-skills: agent instructions
 
+> [!IMPORTANT]
+> **This repository is archived. The skills moved to [innFactory-AI/companygpt-library](https://github.com/innFactory-AI/companygpt-library).**
+> There, German and English skills have their own names (`de-excel`, `en-excel`), so both languages fit into one
+> companyGPT, and the repo also has ready-made agents and admin defaults (model labels). If you connected this repo
+> in companyADMIN Library Sync, remove it and connect `innFactory-AI/companygpt-library` (sources `skills`, optionally
+> `agents`); your own agents need the new skill names.
+
 This repo is the **single source** for the ready-made companyGPT agent skills. The docs site
 ([innFactory-AI/docs](https://github.com/innFactory-AI/docs), docs.company-gpt.com → Tutorials → Skills) does not
 keep its own copy: its build runs `scripts/sync-skills.mjs`, which reads this repo (branch `main`) and generates every
